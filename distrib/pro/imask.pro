@@ -35,7 +35,7 @@
 ;----------------------------------------------------------------------------
 PRO imask,x,y,ey,mask,maskflg
 
-  	IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imask' & RETURN & ENDIF
+  	;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imask' & RETURN & ENDIF
 ;
 ;Error control.
 ;

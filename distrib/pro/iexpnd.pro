@@ -29,7 +29,7 @@
 ;------------------------------------------------------------------------------
 PRO IEXPND,x,y
 
-       IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imexpnd' & RETURN & ENDIF
+   ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imexpnd' & RETURN & ENDIF
 ;
 ;Error control.
 ;

@@ -36,7 +36,7 @@
 ;----------------------------------------------------------------------------
 PRO XLIMIT,x,xpos1,xpos2,x1,x2
 
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'xlimit' & RETURN & ENDIF
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'xlimit' & RETURN & ENDIF
 
 	x1 = WHERE(x GE xpos1)  &  x1 = x1(0)
 	x2 = WHERE(x GT xpos2)  &  x2 = x2(0) - 1

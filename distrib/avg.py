@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from numpy import *
 
 def AVG(y):

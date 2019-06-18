@@ -36,7 +36,7 @@
 ;------------------------------------------------------------------------------
 FUNCTION LEGPOLY,x,coeff
 
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'legpoly' & RETURN,0 & ENDIF
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'legpoly' & RETURN,0 & ENDIF
 ;
 ;Array length variables.
 ;

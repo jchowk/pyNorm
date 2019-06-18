@@ -41,7 +41,7 @@
 ;------------------------------------------------------------------------------
 PRO iREBIN,x,y,ey,ycon,ycon_sig,coflag
 
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iRebin' & RETURN & ENDIF
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iRebin' & RETURN & ENDIF
 ;
 ;Error control.
 ;

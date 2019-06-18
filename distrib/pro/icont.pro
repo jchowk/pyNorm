@@ -41,7 +41,7 @@
 ;----------------------------------------------------------------------------
 PRO iCONT,x,y,ey,xarray,yarray,store,coflag
 
-  	IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imcont' & RETURN & ENDIF
+  	;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imcont' & RETURN & ENDIF
 ;
 ;Error control.
 ;

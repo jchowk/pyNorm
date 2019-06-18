@@ -29,7 +29,7 @@
 ;------------------------------------------------------------------------------
 PRO IMATH,x,y
 
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imath' & RETURN & ENDIF
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imath' & RETURN & ENDIF
 ;
 ;Error control.
 ;

@@ -37,7 +37,7 @@
 ;----------------------------------------------------------------------------
 PRO iBLEM,x,y,ey,yorig
 
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imblem' & RETURN & ENDIF
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imblem' & RETURN & ENDIF
 ;
 ;Error control.
 ;

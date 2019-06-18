@@ -41,7 +41,7 @@
 ;----------------------------------------------------------------------------
 PRO iSTAT2,x,y,ycon,y_sig,ycon_sig,m1,m1err,m2,m2err,m3,m3err,m4,m4err,dv90,v90a,v90b
 
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iSTAT2' & RETURN & ENDIF
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iSTAT2' & RETURN & ENDIF
 ;
 ;Calculate dx.
 ;

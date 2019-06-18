@@ -91,7 +91,7 @@ loadct,39,/silent
   maskflg = 0 
 	
 
-        IF N_PARAMS() EQ 0 THEN BEGIN 
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN 
           print,' '
           print,'USAGE: iNORM,v,f,ef=ef,wavc=wavc,root=root,ion=ion,fval=fval,gam=gam,object=object,redshift=redshift'
           print, '        v :== velocity or wavelength array '
@@ -177,7 +177,7 @@ INITIAL_READ:
 ;
 ;Initialize if no parameter passed.  Jump to loop 4 to do the read.
 ;
-	IF N_PARAMS() EQ 0 THEN BEGIN
+	;; IF N_PARAMS() EQ 0 THEN BEGIN
 		reflag = 1
 		root = ' '
 	ENDIF

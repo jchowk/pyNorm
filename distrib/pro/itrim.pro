@@ -37,7 +37,7 @@
 PRO iTRIM,x,y,ey,ycon,ycon_sig,coflag
 
 
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imtrim' & RETURN & ENDIF
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imtrim' & RETURN & ENDIF
 ;
 ;Error control.
 ;

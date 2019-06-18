@@ -31,7 +31,7 @@
 ;----------------------------------------------------------------------------
 FUNCTION iSMEAR,x,y,fwhm
 
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'ismear' & RETURN,0 & ENDIF
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'ismear' & RETURN,0 & ENDIF
 ;
 ;Return if FWHM = 0
 ;

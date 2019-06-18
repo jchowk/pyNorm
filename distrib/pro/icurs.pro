@@ -46,7 +46,7 @@ LOOP:
 ;
 ;Get cursor position in data coordinates.  Use the /DOWN qualifier.
 ;
-	IF N_PARAMS() EQ 0 THEN CURSOR,xpos,ypos,/DOWN
+	;; IF N_PARAMS() EQ 0 THEN CURSOR,xpos,ypos,/DOWN
 	IF N_PARAMS() NE 0 THEN CURSOR,xpos,ypos,/DOWN,/DEVICE
 ;
 ;If the right mouse button is pressed, then exit.  Otherwise print position
@@ -62,7 +62,7 @@ LOOP:
 		PRINT,format,xpos,ypos
 	ENDIF ELSE PRINT,xpos,ypos
 
-	IF N_PARAMS() EQ 0 THEN BEGIN	
+	;; IF N_PARAMS() EQ 0 THEN BEGIN	
 		!p.linestyle = 2
 		nsum = !nsum & !nsum = 1
 		OPLOT,!x.crange,[ypos,ypos]

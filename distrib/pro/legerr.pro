@@ -37,7 +37,7 @@
 ;------------------------------------------------------------------------------
 PRO LEGERR,x,y,a,eps,chi2,error
 
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'legerr' & RETURN & ENDIF
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'legerr' & RETURN & ENDIF
 
 	ncoeff = N_ELEMENTS(a)
 	nx = N_ELEMENTS(x)

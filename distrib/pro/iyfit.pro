@@ -41,7 +41,7 @@
 ;----------------------------------------------------------------------------
 PRO iYFIT,x,y,ey,xarray,yarray,store,ycon,a,sigma,ycon_sig,ftflag
 
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iyfit' & RETURN & ENDIF
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iyfit' & RETURN & ENDIF
 ;
 ;Error control.
 ;

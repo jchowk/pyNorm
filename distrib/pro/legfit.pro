@@ -44,7 +44,7 @@
 ;------------------------------------------------------------------------------
 PRO LEGFIT,x,y,minord,maxord,yfit,a,eps,chi2
 	
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'legfit' & RETURN & ENDIF
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'legfit' & RETURN & ENDIF
 ;
 ;Flags and counters.
 ;

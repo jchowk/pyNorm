@@ -1,0 +1,279 @@
+./run_i2py.csh
+---  +avg.pro+  ---
+---  +ftest.pro+  ---
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:3: syntax error: invalid syntax at '\n\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:3: syntax error: invalid syntax at '\n\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:3: syntax error: invalid syntax at '\n\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:2: syntax error: invalid syntax at '\n'
+ftest.pro:1: syntax error: invalid syntax at ','
+ftest.pro:3: syntax error: invalid syntax at '\n\n'
+ftest.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +iaxis.pro+  ---
+---  +iblem.pro+  ---
+iblem.pro:1: syntax error: invalid syntax at ':'
+iblem.pro:1: syntax error: invalid syntax at ':'
+iblem.pro:1: syntax error: invalid syntax at ':'
+iblem.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iblem.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +icol.pro+  ---
+---  +icol_batch.pro+  ---
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ']'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ']'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ']'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ']'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ']'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ']'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:1: syntax error: invalid syntax at ']'
+icol_batch.pro:1: syntax error: invalid syntax at ':'
+icol_batch.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+icol_batch.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +icol_prep.pro+  ---
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ']'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ']'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ']'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ']'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ']'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ']'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:1: syntax error: invalid syntax at ']'
+icol_prep.pro:1: syntax error: invalid syntax at ':'
+icol_prep.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+icol_prep.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +icol_prep_batch.pro+  ---
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ']'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ']'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ']'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ']'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ']'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ']'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ']'
+icol_prep_batch.pro:1: syntax error: invalid syntax at ':'
+icol_prep_batch.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+icol_prep_batch.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +icont.pro+  ---
+icont.pro:1: syntax error: invalid syntax at '('
+icont.pro:1: syntax error: invalid syntax at '('
+icont.pro:1: syntax error: invalid syntax at '('
+icont.pro:1: syntax error: invalid syntax at 'ENDFOR'
+icont.pro:1: syntax error: invalid syntax at '('
+icont.pro:1: syntax error: invalid syntax at 'ENDIF'
+icont.pro:1: syntax error: invalid syntax at ':'
+icont.pro:1: syntax error: invalid syntax at ':'
+icont.pro:1: syntax error: invalid syntax at ':'
+icont.pro:1: syntax error: invalid syntax at ':'
+icont.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+icont.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +icurs.pro+  ---
+icurs.pro:1: syntax error: invalid syntax at 'ENDIF'
+icurs.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+icurs.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +ieqw.pro+  ---
+---  +iexpnd.pro+  ---
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iexpnd.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+---  +ifind.pro+  ---
+ifind.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+ifind.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+ifind.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+ifind.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+---  +igauss.pro+  ---
+igauss.pro:1: syntax error: invalid syntax at ':'
+igauss.pro:1: syntax error: invalid syntax at ':'
+igauss.pro:1: syntax error: invalid syntax at ':'
+igauss.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+igauss.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +ihelp.pro+  ---
+Traceback (most recent call last):
+ File "/Users/howk/.pyenv/versions/miniconda2-latest/bin/idl2python", line 6, in <module>
+   exec(compile(open(__file__).read(), __file__, 'exec'))
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/idl2python", line 127, in <module>
+   output = process_input(infile)
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/idl2python", line 75, in process_input
+   output = i2py.parse(infile.read())
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/i2py/parser.py", line 416, in parse
+   return parser.parse(input, lexer, debug)
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/i2py/yacc.py", line 265, in parse
+   return self.parseopt_notrack(input,lexer,debug,tracking,tokenfunc)
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/i2py/yacc.py", line 921, in parseopt_notrack
+   lookahead = get_token()     # Get the next token
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/i2py/lex.py", line 384, in token
+   newtok = self.lexerrorf(tok)
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/i2py/lexer.py", line 217, in t_error
+   t.skip(1)
+AttributeError: 'LexToken' object has no attribute 'skip'
+---  +imask.pro+  ---
+imask.pro:1: syntax error: invalid syntax at '('
+imask.pro:1: syntax error: invalid syntax at '('
+imask.pro:1: syntax error: invalid syntax at '('
+imask.pro:1: syntax error: invalid syntax at 'ENDIF'
+imask.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+imask.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+imask.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +imath.pro+  ---
+imath.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+imath.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+---  +imnormtoinorm.pro+  ---
+---  +inorm.pro+  ---
+Traceback (most recent call last):
+ File "/Users/howk/.pyenv/versions/miniconda2-latest/bin/idl2python", line 6, in <module>
+   exec(compile(open(__file__).read(), __file__, 'exec'))
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/idl2python", line 127, in <module>
+   output = process_input(infile)
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/idl2python", line 75, in process_input
+   output = i2py.parse(infile.read())
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/i2py/parser.py", line 416, in parse
+   return parser.parse(input, lexer, debug)
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/i2py/yacc.py", line 265, in parse
+   return self.parseopt_notrack(input,lexer,debug,tracking,tokenfunc)
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/i2py/yacc.py", line 921, in parseopt_notrack
+   lookahead = get_token()     # Get the next token
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/i2py/lex.py", line 384, in token
+   newtok = self.lexerrorf(tok)
+ File "/Users/howk/Dropbox (KODIAQ)/python/i2py/i2py/lexer.py", line 217, in t_error
+   t.skip(1)
+AttributeError: 'LexToken' object has no attribute 'skip'
+---  +inormsave.pro+  ---
+---  +irebin.pro+  ---
+---  +ismear.pro+  ---
+ismear.pro:1: syntax error: invalid syntax at ':'
+ismear.pro:1: syntax error: invalid syntax at '-'
+ismear.pro:1: syntax error: invalid syntax at ':'
+ismear.pro:1: syntax error: invalid syntax at '-'
+ismear.pro:1: syntax error: invalid syntax at 'ENDIF'
+ismear.pro:1: syntax error: invalid syntax at 'ENDIF'
+ismear.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +istat2.pro+  ---
+---  +itrim.pro+  ---
+itrim.pro:1: syntax error: invalid syntax at ':'
+itrim.pro:1: syntax error: invalid syntax at ':'
+itrim.pro:1: syntax error: invalid syntax at ':'
+itrim.pro:1: syntax error: invalid syntax at ':'
+itrim.pro:1: syntax error: invalid syntax at ':'
+itrim.pro:1: syntax error: invalid syntax at ':'
+itrim.pro:1: syntax error: invalid syntax at ':'
+itrim.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+itrim.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +iyfit.pro+  ---
+iyfit.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+iyfit.pro:0: conversion error: cannot convert GOTO statements; please remove them and try again
+---  +legerr.pro+  ---
+legerr.pro:1: syntax error: invalid syntax at ','
+legerr.pro:1: syntax error: invalid syntax at '*'
+legerr.pro:1: syntax error: invalid syntax at ','
+legerr.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +legfit.pro+  ---
+legfit.pro:1: syntax error: invalid syntax at ','
+legfit.pro:1: syntax error: invalid syntax at '*'
+legfit.pro:1: syntax error: invalid syntax at ','
+legfit.pro:1: syntax error: invalid syntax at ','
+legfit.pro:1: syntax error: invalid syntax at ','
+legfit.pro:1: syntax error: invalid syntax at ','
+legfit.pro:1: syntax error: invalid syntax at ','
+legfit.pro:1: syntax error: invalid syntax at 'ENDFOR'
+legfit.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +legpoly.pro+  ---
+legpoly.pro:1: syntax error: invalid syntax at ','
+legpoly.pro:1: syntax error: invalid syntax at '*'
+legpoly.pro:1: syntax error: invalid syntax at ','
+legpoly.pro:1: syntax error: invalid syntax at ','
+legpoly.pro:0: syntax error: RETURN outside of PRO or FUNCTION
+---  +xlimit.pro+  ---

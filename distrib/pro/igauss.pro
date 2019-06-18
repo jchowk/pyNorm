@@ -35,7 +35,7 @@
 ;----------------------------------------------------------------------------
 PRO iGAUSS,x,y
 
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imgaus' & RETURN & ENDIF
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imgaus' & RETURN & ENDIF
 ;
 ;Error control
 ;

@@ -51,7 +51,7 @@ PRO iCOL_PREP,x,y,ey,ycon,sigma,ycon_sig,wavc,fval
   common FLAGSAT, flag_sat
   
 loadct,39,/silent
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iCcol_prep' & RETURN & ENDIF
+    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iCcol_prep' & RETURN & ENDIF
 ;
 ;Error control
 ;
