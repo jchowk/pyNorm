@@ -1,1 +1,5 @@
 pyenv shell miniconda2-latest
+
+## Convert auto continuum code:
+idl2python nl_do_cont_aod.pro
+idl2python nl_continuum_aod.pro

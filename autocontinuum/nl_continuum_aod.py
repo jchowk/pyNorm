@@ -50,6 +50,8 @@
 -
 """
 
+from __future__ import print_function
+
 from numpy import *
 
 def cbw_contfit(x, y, continuum, continuum_err, mask, minord, maxord, sn, ftflag):
@@ -108,12 +110,12 @@ def cbw_contfit(x, y, continuum, continuum_err, mask, minord, maxord, sn, ftflag
     #
     #Print the fitting statistics to upper corner of screen.
     #
-    print '----------------------------------------'
-    print 'Order used = ', maxord
-    print '# points   = ', str(yarray.size, '(I8)')
-    print 'RMS sigma  = ', str(sigma, '(E9.3)')
-    print 'Mean S/N   = ', str(sn, '(F8.2)')
-    print '----------------------------------------'
+    print( '----------------------------------------')
+    print( 'Order used = ', maxord)
+    print( '# points   = ', str(yarray.size, '(I8)'))
+    print( 'RMS sigma  = ', str(sigma, '(E9.3)'))
+    print( 'Mean S/N   = ', str(sn, '(F8.2)'))
+    print( '----------------------------------------')
     ftflag = 1
     
     
@@ -139,7 +141,7 @@ def nl_continuum_aod(filein, maxord=None, minord=None, nsig1=None, nsig2=None, v
         return tuple(_rv)
     
     if bitwise_not((filein is not None)):    
-        print 'No input file...'
+        print( 'No input file...')
         return _ret()
     if bitwise_not((minord is not None)):    
         minord = 0
@@ -483,7 +485,7 @@ def nl_continuum_aod(filein, maxord=None, minord=None, nsig1=None, nsig2=None, v
     vel = vi1
     
     if (flgaod is not None):    
-        print 'iCOL_BATCH::  Ion = ', ion
+        print( 'iCOL_BATCH::  Ion = ', ion)
         
         if (changename is not None):    
             outname = str + 'i_o.save'

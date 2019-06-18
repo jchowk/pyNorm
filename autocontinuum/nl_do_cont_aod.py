@@ -24,6 +24,8 @@
 -
 """
 
+from __future__ import print_function
+
 from numpy import *
 
 def nl_do_cont_aod(filein=None, maxord=None, minord=None, nsig1=None, nsig2=None, vl1=None, vclip1=None, vl2=None, vaod1=None, vaod2=None, contplot=None, aodplot=None, flgaod=None, blemish=None, vshift=None, pix1=None, pix2=None, fmin=None, nocont=None, noerror=None, kind=None, pdfflg=None, changename=None):
@@ -36,7 +38,7 @@ def nl_do_cont_aod(filein=None, maxord=None, minord=None, nsig1=None, nsig2=None
         return tuple(_rv)
     
     if bitwise_not((filein is not None)):    
-        print 'No input file...'
+        print( 'No input file...', )
         return _ret()
     
     
