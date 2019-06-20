@@ -1,7 +1,7 @@
 ;+
 ;				ITRIM.PRO
 ;				Version 1.0
-;				
+;
 ;Program Description:
 ;	This program trims a spectrum and associated continuum and error bars.
 ;
@@ -30,14 +30,14 @@
 ;
 ;Latest Update Comments:
 ;	04/12/13  NL	- Version 1.0
-;	
+;
 ;External Routines called:
 ;	XLIMIT		- to determine trimming elements
 ;----------------------------------------------------------------------------
 PRO iTRIM,x,y,ey,ycon,ycon_sig,coflag
 
 
-    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imtrim' & RETURN & ENDIF
+    ;;  ;; ;; ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imtrim' & RETURN & ENDIF
 ;
 ;Error control.
 ;
@@ -46,7 +46,7 @@ PRO iTRIM,x,y,ey,ycon,ycon_sig,coflag
 ;Print heading and get left trim limit.
 ;
 	PRINT,'iTrim::  (c)ursor trim   (k)eyboard trim   (q)uit'
-LOOP:
+;; LOOP:
 	choice = GET_KBRD(1)
 ;
 ;Quit if user wants to do so.
@@ -56,7 +56,7 @@ LOOP:
 ;Do the trim in the x-coordinate.
 ;
 loadct,39,/silent
-LOOP1:
+;; LOOP1:
 	IF choice EQ 'c' THEN BEGIN
 		PRINT,'iTrim::  Mark (C1,C2,C3)'
 		CURSOR,xpos1,ypos1,/DOWN
@@ -69,7 +69,7 @@ LOOP1:
 		READ,'iTrim::  Enter right limit: ',xpos2
 	ENDIF ELSE BEGIN
 		PRINT,'iTrim::  (c)ursor trim  (k)eyboard trim  (q)uit'
-		GOTO,LOOP
+		;; GOTO,;; LOOP
 	ENDELSE
 
 
@@ -90,32 +90,32 @@ LOOP1:
                 PRINT,'iTrim::  '$
                         +'Insufficient spectral range remaining.'
                 PRINT,'iTrim::  Please re-enter limits.'
-                GOTO,LOOP1
+                ;; GOTO,;; LOOP1
         ENDIF
 ;
 ;Ask if limits are acceptable.  If not, return.
 ;
-	PLOT,x(x1:x2),y(x1:x2)
+	PLOT,x[x1:x2],y[x1:x2]
 	READ,'iTrim::  Is the trimmed spectrum acceptable? ',choice
 	IF STRMID(choice,0,1) NE 'y' THEN BEGIN
 		PRINT,'iTrim::  Spectrum untrimmed'
 		RETURN
 	ENDIF
 ;
-;Trim the spectrum.  
+;Trim the spectrum.
 ;
-	x = x(x1:x2)
-  y = y(x1:x2)
-	ey = ey(x1:x2)
+	x = x[x1:x2]
+  y = y[x1:x2]
+	ey = ey[x1:x2]
 ;
-;Trim the continuum and error bar arrays if they exist.  Return if only two 
+;Trim the continuum and error bar arrays if they exist.  Return if only two
 ;parameters are passed (ie., called outside IMNORM).
 ;
 	IF N_PARAMS() EQ 4 THEN RETURN
 	IF coflag EQ 1 THEN begin
-	 ycon = ycon(x1:x2)
-	 ycon_sig = ycon_sig(x1:x2)
-	 endif 
+	 ycon = ycon[x1:x2]
+	 ycon_sig = ycon_sig[x1:x2]
+	 endif
 ;
 ;Update message to be put into file header and return.
 ;
@@ -124,6 +124,7 @@ LOOP1:
 			+' points  '+!stime
 	RETURN
 ;------------------------------------------------------------------------------
-ESCAPE:
-	PRINT,'iTrim::  '+!err_string
-	RETURN  &  END
+; ESCAPE:
+; 	PRINT,'iTrim::  '+!err_string
+; 	RETURN  &
+	END

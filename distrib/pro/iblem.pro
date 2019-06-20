@@ -37,17 +37,17 @@
 ;----------------------------------------------------------------------------
 PRO iBLEM,x,y,ey,yorig
 
-    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imblem' & RETURN & ENDIF
+    ;;  IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imblem' & RETURN & ENDIF
 ;
 ;Error control.
 ;
-        ON_IOERROR,ESCAPE
+        ; ON_IOERROR,ESCAPE
 	yorig = y
-LOOP:
+;; LOOP:
 ;
 ;Get input from user.  If right mouse button is pushed, the return.
-;If middle button is pushed, then clear. 
-;		
+;If middle button is pushed, then clear.
+;
         PRINT,'IMBLEM(v5.2)::  Mark (C1)  Reset (C2)  Quit (C3)'
 	CURSOR,xpos1,ypos1,/DOWN
         xpos1 = xpos1 > MIN(x)  &  !c = 0
@@ -60,13 +60,13 @@ LOOP:
 				   + ' blemished points removed  '+ !stime
 		   ENDIF
 		ENDIF
-		RETURN
+		; RETURN
 	ENDIF
 
         IF !err EQ 2 THEN BEGIN
 		y = yorig
 		PLOT,x,y
-		GOTO,LOOP
+		;; GOTO,;; LOOP
 	ENDIF
 	PRINT,'IMBLEM(v5.2)::  Left limit:  ',xpos1
         OPLOT,[1,1]*xpos1,[1,1]*ypos1,psym=1
@@ -86,14 +86,14 @@ LOOP:
 ;Determine which elements to interpolate and do interpolation.
 ;
         XLIMIT,x,xpos1,xpos2,x1,x2
-	xint = x(x1:x2)
+	xint = x[x1:x2]
   yint = INTERPOL([y(x1),y(x2)],[x(x1),x(x2)],xint)
   eyint = INTERPOL([ey(x1),ey(x2)],[x(x1),x(x2)],xint)
-	y(x1:x2) = yint
-	ey(x1:x2) = eyint
+	y[x1:x2] = yint
+	ey[x1:x2] = eyint
 	OPLOT,xint,yint
-	GOTO,LOOP		
+	;; GOTO,;; LOOP
 ;----------------------------------------------------------------------------
-ESCAPE:
-        PRINT,'IMBLEM(v5.2)::  '+!err_string
-        RETURN  &  END
+; ESCAPE:
+        ; PRINT,'IMBLEM(v5.2)::  '+!err_string
+END

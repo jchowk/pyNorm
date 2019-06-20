@@ -41,7 +41,7 @@
 ;------------------------------------------------------------------------------
 PRO iREBIN,x,y,ey,ycon,ycon_sig,coflag
 
-    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iRebin' & RETURN & ENDIF
+    ;;  ;; ;; ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iRebin' & RETURN & ENDIF
 ;
 ;Error control.
 ;
@@ -49,7 +49,7 @@ PRO iREBIN,x,y,ey,ycon,ycon_sig,coflag
 ;
 ;Print heading and get rebinning factor.
 ;
-LOOP:
+;; LOOP:
            npx=n_elements(x)
 	PRINT,'iRebin::  Current x,y vectors are '+STRTRIM(npx,2)$
 		+' points long'

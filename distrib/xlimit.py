@@ -41,7 +41,7 @@ from numpy import *
 
 def XLIMIT(x, xpos1, xpos2, x1, x2):
 
-##  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'xlimit' & RETURN & ENDIF
+##  ;; ;; ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'xlimit' & RETURN & ENDIF
 
     n_params = 5
     def _ret():  return (x, xpos1, xpos2, x1, x2)

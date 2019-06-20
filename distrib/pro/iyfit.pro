@@ -3,13 +3,13 @@
 ;				Version 1.0
 ;Program Description:
 ;	This procedure fits a Legendre polynomial continuum to a spectrum
-;	and calculates associated errors as outline in Sembach & Savage 
+;	and calculates associated errors as outline in Sembach & Savage
 ;	1992.
 ;
 ;Restrictions:
 ;       Requires cursor (3 button mouse) input
 ;
-;Screen Output: 
+;Screen Output:
 ;	Text  &  Graphics
 ;
 ;Use:
@@ -26,7 +26,7 @@
 ;		ycon	:== y calculated continuum array
 ;		a	:== coefficient array
 ;		sigma   :== sigma of fit
-;		ycon_sig:== error on continuum points 
+;		ycon_sig:== error on continuum points
 ;
 ;Common Blocks / Structures:
 ;	None
@@ -41,7 +41,7 @@
 ;----------------------------------------------------------------------------
 PRO iYFIT,x,y,ey,xarray,yarray,store,ycon,a,sigma,ycon_sig,ftflag
 
-    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iyfit' & RETURN & ENDIF
+    ;;  ;; ;; ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iyfit' & RETURN & ENDIF
 ;
 ;Error control.
 ;
@@ -51,30 +51,31 @@ PRO iYFIT,x,y,ey,xarray,yarray,store,ycon,a,sigma,ycon_sig,ftflag
 ;
 	PRINT,'iYFIT::  Current fit order: ', $
 	STRING(N_ELEMENTS(a)-1,'(I1)')
-LOOP:
+;; LOOP:
 loadct,39,/silent
 	liney1=[!cymax/30.0,-!cymax/30.0]+0.9*!cymax
 	FOR k=0,N_ELEMENTS(store)/2-1 DO BEGIN
-		OPLOT,[store(0,k),store(0,k)],liney1,color= 200
-		OPLOT,[store(1,k),store(1,k)],liney1,color= 200
-		OPLOT,[store(0,k),store(1,k)],[1.0,1.0]*0.9*!cymax,color= 200
+		OPLOT,[store[0,k],store[0,k]],liney1,color= 200
+		OPLOT,[store[1,k],store[1,k]],liney1,color= 200
+		OPLOT,[store[0,k],store[1,k]],[1.0,1.0]*0.9*!cymax,color= 200
 	ENDFOR
 ;
 ;Print heading and instructions.
 ;
-	READ,'iYFIT::  Minimum order of fit (-1=clear,0=quit): ',minord 
-	minord = FIX(minord)  
-	IF minord EQ 0 THEN RETURN
+	READ,'iYFIT::  Minimum order of fit (-1=clear,0=quit): ',minord
+	minord = FIX(minord)
+	; IF minord EQ 0 THEN RETURN
 	IF minord LT 0 THEN BEGIN
-		PLOT,x,y  &  GOTO,LOOP
+		PLOT,x,y
+		;; GOTO,;; LOOP
 	ENDIF
-	READ,'iYFIT::  Maximum order of fit: ',maxord  
+	READ,'iYFIT::  Maximum order of fit: ',maxord
 	maxord = FIX(maxord) > minord
 	PRINT,'iYFIT::  Working...'
 ;
 ;Check to be sure nord is not too large for array.
 ;
-	IF maxord GE N_ELEMENTS(xarray) THEN GOTO,ESCAPE
+	; IF maxord GE N_ELEMENTS(xarray) THEN GOTO,ESCAPE
 	maxord = maxord < 9
 	minord = minord < 9
 ;
@@ -139,6 +140,8 @@ loadct,39,/silent
         ftflag=1
 	RETURN
 ;------------------------------------------------------------------------------
-ESCAPE:
-	PRINT,'iYFIT::  '+!err_string
-	RETURN  &  END
+; ESCAPE:
+; 	PRINT,'iYFIT::  '+!err_string
+; 	RETURN  &
+
+END

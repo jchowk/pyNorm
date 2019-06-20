@@ -54,7 +54,7 @@ def iCOL(x, y, ycon, y_sig, ycon_sig, wavc, fval, col, y_err, ycon_err, zero_err
     
     global flag_sat
     
-    # ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imcol' & RETURN & ENDIF
+    # ;; ;; ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imcol' & RETURN & ENDIF
     #
     #Calculate dx.
     #
@@ -107,4 +107,6 @@ def iCOL(x, y, ycon, y_sig, ycon_sig, wavc, fval, col, y_err, ycon_err, zero_err
     col1 = tau1 / (wavc * fval * 2.654e-15)
     zero_err = absolute(col1 - col)
     
-    return _ret()  ;
+    
+    return _ret()
+

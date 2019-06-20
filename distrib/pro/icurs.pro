@@ -3,12 +3,12 @@
 ;
 ;Program Description:
 ;	This procedure reads the cursor position from the current X window.
-;	Coordinates are read in data coordinates. 
-; 
+;	Coordinates are read in data coordinates.
+;
 ;Restrictions:
 ;	Only works with 3 button mouse.  Use right mouse button to exit.
 ;
-;Screen Output: 
+;Screen Output:
 ;	Graphics  &  Text
 ;
 ;Use:
@@ -25,7 +25,7 @@
 ;
 ;Latest Update Comments:
 ;	04/11/13  NL	- Version 1.0
-;	
+;
 ;External Routines called:
 ;	None
 ;------------------------------------------------------------------------------
@@ -33,20 +33,20 @@ PRO iCURS
 ;
 ;Error control
 ;
-	ON_IOERROR,ESCAPE
+	; ON_IOERROR,ESCAPE
 ;
 ;Print heading.
 ;
 	PRINT,'iCURS::  Mark (C1,C2)   Quit (C3)'
 	PRINT,'iCURS::  Information Dump Follows'
 	PRINT,'----------------------------------------'
-   	PRINT,'          X             Y             '	
+   	PRINT,'          X             Y             '
 
-LOOP: 
+;; LOOP:
 ;
 ;Get cursor position in data coordinates.  Use the /DOWN qualifier.
 ;
-	;; IF N_PARAMS() EQ 0 THEN CURSOR,xpos,ypos,/DOWN
+	;; ;; ;; IF N_PARAMS() EQ 0 THEN CURSOR,xpos,ypos,/DOWN
 	IF N_PARAMS() NE 0 THEN CURSOR,xpos,ypos,/DOWN,/DEVICE
 ;
 ;If the right mouse button is pressed, then exit.  Otherwise print position
@@ -62,17 +62,17 @@ LOOP:
 		PRINT,format,xpos,ypos
 	ENDIF ELSE PRINT,xpos,ypos
 
-	;; IF N_PARAMS() EQ 0 THEN BEGIN	
+	;;IF N_PARAMS() EQ 0 THEN BEGIN
 		!p.linestyle = 2
 		nsum = !nsum & !nsum = 1
 		OPLOT,!x.crange,[ypos,ypos]
 		OPLOT,[xpos,xpos],!y.crange
 		!p.linestyle = 0
 		!nsum = nsum
-	ENDIF
+	; ENDIF
 
-	GOTO,LOOP
+	;; GOTO,;; LOOP
 ;------------------------------------------------------------------------------
-ESCAPE:
-	PRINT,'iCURS:: '+!err_string
-	RETURN  &  END
+; ESCAPE:
+; 	PRINT,'iCURS:: '+!err_string
+END

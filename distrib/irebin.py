@@ -57,7 +57,7 @@ def iREBIN(x, y, ey, ycon, ycon_sig, coflag):
     #
     #Print heading and get rebinning factor.
     #
-    # LOOP:
+    ## LOOP:
     npx = x.size
     print( 'iRebin::  Current x,y vectors are ' + STRTRIM(npx, 2) + ' points long')
     fact = 0.0

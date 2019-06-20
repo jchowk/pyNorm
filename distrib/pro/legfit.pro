@@ -17,7 +17,7 @@
 ;
 ;Use:
 ;	LEGFIT,x,y,minord,maxord,yfit,a,eps,chi2
-;	
+;
 ;On Input:
 ;		x	:== abscissa array
 ;		y	:== ordinate array
@@ -43,15 +43,15 @@
 ;	FTEST		- to check for need for another term in polynomial
 ;------------------------------------------------------------------------------
 PRO LEGFIT,x,y,minord,maxord,yfit,a,eps,chi2
-	
-    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'legfit' & RETURN & ENDIF
+
+    ;;  ;; ;; ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'legfit' & RETURN & ENDIF
 ;
 ;Flags and counters.
 ;
 	nflag = 0
 	nord = maxord
 ;
-;Array subscript length and vector. 
+;Array subscript length and vector.
 ;
 	nx = N_ELEMENTS(x)
 	ix = INDGEN(nx)
@@ -59,25 +59,25 @@ PRO LEGFIT,x,y,minord,maxord,yfit,a,eps,chi2
 ;Form legendre polynomial.
 ;
 	p = FLTARR(nx,maxord+1)
-	p(ix) = 1.
-	p(ix+nx) = x
+	p[ix] = 1.
+	p[ix+nx] = x
         FOR j=2.,maxord DO $
-         p(ix+j*nx) = ((2.*j-1.)*x*p(*,j-1)-(j-1)*p(*,j-2))/j
+         p(ix+j*nx) = ((2.*j-1.)*x*p[*,j-1]-(j-1)*p[*,j-2])/j
 ;
 ;Begin loop to do fit.
 ;
 	FOR nord=minord,maxord DO BEGIN
 
-	   LOOP:
+	   ;; LOOP:
 		ncoeff = nord + 1
 	   ;
 	   ;Form alpha and beta matrices.
 	   ;
 		beta = FLTARR(nord+1)
 		alpha = FLTARR(nord+1,nord+1)
-		FOR k=0,nord DO beta(k) = TOTAL(y*p(*,k))
+		FOR k=0,nord DO beta(k) = TOTAL(y*p[*,k])
 		FOR k=0,nord DO BEGIN
-			FOR j=0,nord DO alpha(j,k)=TOTAL(p(*,j)*p(*,k))
+			FOR j=0,nord DO alpha(j,k)=TOTAL(p[*,j]*p[*,k])
 		ENDFOR
  	   ;
 	   ;Invert alpha matrix ==> error matrix eps.
@@ -88,37 +88,40 @@ PRO LEGFIT,x,y,minord,maxord,yfit,a,eps,chi2
 	   ;
 		a = beta # eps
 		yfit = FLTARR(nx)
-		FOR j=0,nord DO yfit = yfit + a(j) * p(*,j)
+		FOR j=0,nord DO yfit = yfit + a(j) * p[*,j]
 	   ;
 	   ;Calculate chi squared of fit - uniform weighting=1.
 	   ;
 ;		sigma = SQRT(TOTAL((y-yfit)^2)/(nx-ncoeff-1))
-		chisq = TOTAL((y-yfit)^2) 
+		chisq = TOTAL((y-yfit)^2)
 		chi2 = chisq / (nx-ncoeff-1)
 	   ;
-	   ;Check chi2 against previous chi2 to see if additional term should 
+	   ;Check chi2 against previous chi2 to see if additional term should
 	   ;be kept.  Check probability for "95% confidence".
 	   ;
-		IF nflag EQ 1 THEN GOTO,OUT
+		; IF nflag EQ 1 THEN  GOTO,OUT
 		IF nord GT minord THEN BEGIN
 			f = (chisq1-chisq)/chi2
-			fcutoff = FTEST(nx-ncoeff-1,0.05) 
+			fcutoff = FTEST(nx-ncoeff-1,0.05)
 			IF f LT fcutoff THEN BEGIN
 				nord = nord - 1
 				nflag = 1
-				GOTO,LOOP  ;back up to top to do it over again
+				;; GOTO,;; LOOP  ;back up to top to do it over again
 			ENDIF
 		ENDIF
 		chisq1 = chisq
 	ENDFOR
-OUT:
-	maxord = maxord < nord
+; OUT:
+; 	maxord = maxord < nord
+
+
+
 ;
-;Calculate errors on coefficients - not used here since uniform weighting of 
+;Calculate errors on coefficients - not used here since uniform weighting of
 ;data, but could be used someday.
 ;
 ;	siga = FLTARR(maxord+1)
 ;	FOR j=0,maxord DO siga(j) = SQRT(chi2*eps(j,j))
 
-	RETURN
+	; RETURN
 	END

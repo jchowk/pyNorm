@@ -48,7 +48,7 @@
 ;------------------------------------------------------------------------------
 PRO iEQW,x,y,ycon,y_sig,ycon_sig,ew,y_err,ycon_err,zero_err,root
 
-    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imeqw' & RETURN & ENDIF
+    ;;  ;; ;; ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imeqw' & RETURN & ENDIF
 ;
 ;Calculate dx.
 ;

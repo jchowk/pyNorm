@@ -3,7 +3,7 @@
 ;                               LEGERR.PRO
 ;
 ;Created: Unknown
-;Last Revised: 
+;Last Revised:
 ;
 ;Program Description:
 ;	This procedure calculates errors for use with LEGFIT.
@@ -37,7 +37,7 @@
 ;------------------------------------------------------------------------------
 PRO LEGERR,x,y,a,eps,chi2,error
 
-    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'legerr' & RETURN & ENDIF
+    ;;  ;; ;; ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'legerr' & RETURN & ENDIF
 
 	ncoeff = N_ELEMENTS(a)
 	nx = N_ELEMENTS(x)
@@ -48,7 +48,7 @@ PRO LEGERR,x,y,a,eps,chi2,error
 	p(ix) = 1.
 	p(ix+nx) = x
 	FOR j=2,nord DO BEGIN
-		p(ix+j*nx) = ((2.*j-1.)*x*p(*,j-1)-(j-1)*p(*,j-2)) / j
+		p(ix+j*nx) = ((2.*j-1.)*x*p[*,j-1]-(j-1)*p[*,j-2]) / j
 	ENDFOR
 
 	eps1 = chi2 * eps
@@ -57,12 +57,11 @@ PRO LEGERR,x,y,a,eps,chi2,error
 		tot(i) = 0
 		FOR l=0,nord DO BEGIN
 			FOR k=0,nord DO BEGIN
-				tot(i) = tot(i) + eps1(l,k) * p(i,l)*p(i,k)
-			ENDFOR		
-		ENDFOR	
+				tot(i) = tot(i) + eps1[l,k] * p[i,l]*p[i,k]
+			ENDFOR
+		ENDFOR
 	ENDFOR
 	error = SQRT(tot)
 
-	RETURN  &  END
-
-
+	RETURN
+END

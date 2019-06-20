@@ -46,7 +46,7 @@
 PRO iCOL,x,y,ycon,y_sig,ycon_sig,wavc,fval,col,y_err,ycon_err,zero_err,root
     common FLAGSAT, flag_sat
 
-        ; ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imcol' & RETURN & ENDIF
+        ; ;; ;; ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imcol' & RETURN & ENDIF
 ;
 ;Calculate dx.
 ;
@@ -98,4 +98,4 @@ PRO iCOL,x,y,ycon,y_sig,ycon_sig,wavc,fval,col,y_err,ycon_err,zero_err,root
 	col1 = tau1 / (wavc*fval*2.654e-15)
 	zero_err = ABS(col1-col)
 
-	RETURN  &  END
+END

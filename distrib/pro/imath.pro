@@ -3,8 +3,8 @@
 ;				Version1.0
 ;
 ;Description:
-;	This routine performs various mathematical operations on a 
-;	spectrum. Limited use.  
+;	This routine performs various mathematical operations on a
+;	spectrum. Limited use.
 ;
 ;Screen Output: Graphics text
 ;
@@ -29,11 +29,11 @@
 ;------------------------------------------------------------------------------
 PRO IMATH,x,y
 
-    ;;  ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imath' & RETURN & ENDIF
+    ;;  ;; ;; ;; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'imath' & RETURN & ENDIF
 ;
 ;Error control.
 ;
-	ON_IOERROR,ESCAPE
+	; ON_IOERROR,ESCAPE
 ;
 ;Initialize
 ;
@@ -41,7 +41,7 @@ PRO IMATH,x,y
 ;
 ;Print heading.
 ;
-   LOOP:
+   ;; LOOP:
         PRINT,'iMATH::  Information Dump Follows'
 	PRINT,'iMATH::  ----------------------------------------'
 	PRINT,'iMATH::  x = ('+STRTRIM(MIN(x),2)+' , ' $
@@ -54,12 +54,12 @@ PRO IMATH,x,y
         PRINT,'iMATH::  End of Information Dump'
 	PRINT,'iMATH::  (a)bs  (e)xp  (i)nverse  (l)og  (n)atural log'
 	PRINT,'iMATH::  (s)quare root (r)eplace value  (R)eset'
-	PRINT,'iMATH::  (+)Add constant  (*)Multiply constant  (q)uit' 
+	PRINT,'iMATH::  (+)Add constant  (*)Multiply constant  (q)uit'
 ;
 ;Get operator.
 ;
-   LOOP1:
-	operator = GET_KBRD(1)		
+   ;; LOOP1:
+	operator = GET_KBRD(1)
 	ysave = y
 	loc = WHERE(y NE 0)
 	CASE operator OF
@@ -69,45 +69,45 @@ PRO IMATH,x,y
 	'a': BEGIN
 	     com(j) = 'iMATH::  Absolute value of spectrum taken  ' $
 		+!stime
-	     y = ABS(y)			
+	     y = ABS(y)
 	     END
    ;
    ;Base e exponential of y.
    ;
 	'e': BEGIN
 	     com(j) = 'iMATH::  Exponential of spectrum taken  '+!stime
-	     y = EXP(y)			
+	     y = EXP(y)
 	     END
    ;
    ;Reciprocal of y.
    ;
-	'i': BEGIN	
+	'i': BEGIN
 	     com(j) = 'iMATH::  Reciprical of spectrum taken  '+!stime
-	     y(loc) = 1.0/y(loc) 	
-	     END 
+	     y(loc) = 1.0/y(loc)
+	     END
    ;
    ;Base 10 log of y > 0.
    ;
-	'l': BEGIN	
+	'l': BEGIN
 	  com(j) = 'iMATH::  Base 10 log of spectrum taken '+!stime
 	  y = y > 0
-          y(loc) = ALOG10(y(loc)) 	
+          y(loc) = ALOG10(y(loc))
 	  END
    ;
    ;Base e log of y > 0
    ;
-	'n': BEGIN	
+	'n': BEGIN
 	     com(j) = 'iMATH::  Base e log of spectrum taken '+!stime
-	     y = y > 0		
-	     y(loc) = ALOG(y(loc))	
+	     y = y > 0
+	     y(loc) = ALOG(y(loc))
 	     END
    ;
    ;Replace values.
    ;
-	'r': BEGIN	
-	     cutoff = 0.0			
+	'r': BEGIN
+	     cutoff = 0.0
 	     READ,'iMATH::  Enter lower cutoff: ',cutoff
-	     y = y > cutoff			
+	     y = y > cutoff
 	     com(j) = 'iMATH::  Y-Cutoff of '+STRTRIM(cutoff,2) $
 		+' imposed  '+!stime
 	     END
@@ -117,11 +117,11 @@ PRO IMATH,x,y
 	's': BEGIN
 	     com(j) = 'iMATH::  Square root of spectrum taken '+!stime
 	     y = y > 0
-   	     y = SQRT(y)		
+   	     y = SQRT(y)
 	     END
-	
+
 	'*': BEGIN
-	     constant = 0.0		
+	     constant = 0.0
 	     READ,'iMATH::  Enter multiplication constant: ',constant
 	     y = y * constant		;Multiply y by constant.
 	     com(j) = 'iMATH::  Constant '+STRTRIM(constant,2) $
@@ -129,13 +129,13 @@ PRO IMATH,x,y
 	     END
 
 	'+': BEGIN
-	     constant = 0.0		
+	     constant = 0.0
 	     READ,'iMATH::  Enter additive constant: ',constant
 	     y = y + constant		;Add constant to y.
 	     com(j) = 'iMATH::  Constant '+STRTRIM(constant,2) $
 			+' added '+!stime
 	     END
-	
+
 	'q': BEGIN
 	     RETURN
 	     END
@@ -149,15 +149,16 @@ PRO IMATH,x,y
 
    	ELSE: BEGIN
 	      PRINT,'iMATH::  Invalid command: '+operator
-	      GOTO,LOOP1
+	      ;; GOTO,;; LOOP1
 	      END
 	ENDCASE
 	PRINT,' '
 	PLOT,x,y
 	j = j+1
-	GOTO,LOOP
+	;; GOTO,;; LOOP
 ;----------------------------------------------------------------------------
-ESCAPE:
-        PRINT,'iMATH::  '+!err_string
-        RETURN  &  END
+; ESCAPE:
+;         PRINT,'iMATH::  '+!err_string
+;         RETURN
 
+	END
