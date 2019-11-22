@@ -1,0 +1,24 @@
+General structural path:
+
+- Method to read spectra [XSpectrum1D]
+- Hold raw spectrum (spectra?)
+    -- HOW TO HOLD MULTIPLE SPECTRA?? [XSpectrum1D??]
+
+- Method to fit continuum
+- Hold auto continuum for total fit
+
+- Separate objects for each line
+    -- Incl. local continuum fit
+    -- Incl. atomic data
+    -- Incl. Na(v) profile
+    -- Incl. Na(v) integration
+    -- Na(v) in bins??
+
+- Method to calculate Na(v), EW for all species over given velocity range.
+    -- Upper limits?
+    -- Lower limits?
+- Method to calculate _N_ with multiple lines.
+    -- How to deal with saturation?
+
+- Method to create tables
+- Method to create figures
