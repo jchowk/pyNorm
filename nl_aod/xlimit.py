@@ -1,4 +1,5 @@
-from numarray import *
+from numpy import *
+import numpy as np
 
 #+
 #Kenneth Sembach

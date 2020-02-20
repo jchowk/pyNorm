@@ -60,16 +60,7 @@ def icol_batch(x, y, ey, ycon, sigma, ycon_sig, wavc, fval, vbatch1, vbatch2,
    global flag_sat
    v90a = 0
    v90b = 0
-   # IF N_PARAMS() EQ 0 THEN BEGIN MAN,'icol_batch' & RETURN & ENDIF
-   #
-   #Error control
-   #
-   # ON_IOERROR, ESCAPE
-   #
-   #Find the appropriate fvalue from a standard line list.
-   #
-   #Print wavelength, f-value, and error type to screen for a user check.
-   #
+
    ycol = zeros([array(y, copy=0).nelements()], Float32)
    print 'iCOL_BATCH::  Wavelength = ', string(wavc, '(f8.3)')
    print 'iCOL_BATCH::  f-value = ', string(fval, '(f7.5)')
