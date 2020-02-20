@@ -4,10 +4,10 @@
 ;				Version 1.0
 ;
 ;Program Description:
-;	This procedure calculates line statistics weighted by the data 
+;	This procedure calculates line statistics weighted by the data
 ;	values (mean, width, skewness, etc.).  It is called by IMSTAT_PREP.
 ;
-;Screen Output: 
+;Screen Output:
 ;	Text
 ;
 ;Use:
@@ -41,19 +41,19 @@
 ;----------------------------------------------------------------------------
 PRO iSTAT2,x,y,ycon,y_sig,ycon_sig,m1,m1err,m2,m2err,m3,m3err,m4,m4err,dv90,v90a,v90b
 
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iSTAT2' & RETURN & ENDIF
+        ; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'iSTAT2' & RETURN & ENDIF
 ;
 ;Calculate dx.
 ;
   nx = N_ELEMENTS(x)
   dx = FLTARR(nx)
-  FOR j=1,nx-2 DO dx(j) = (x(j+1)-x(j-1)) / 2.0 
+  FOR j=1,nx-2 DO dx(j) = (x(j+1)-x(j-1)) / 2.0
   dx(0) = dx(1)  &  dx(nx-1) = dx(nx-2)
 ;
 ;Calculate zeroth moment (equivalent width).
 ;
   tau = double(ALOG(ABS(ycon/y)))
-  tautot = double(TOTAL(tau*dx))  
+  tautot = double(TOTAL(tau*dx))
 ;
 ;Calculate first moment (average velocity).
 ;
@@ -81,20 +81,20 @@ tautot5= 0.05 * tautot
 tautot95= 0.95 * tautot
 
 
-k1 = 0 
-k2 = 0 
+k1 = 0
+k2 = 0
 tautot0 = tau(0) *  (x(2)-x(0))/2.
 for i = 1,n_elements(x) - 2 do begin
     tautot0 = tautot0 + tau(i) * (x(i+1)-x(i-1))/2.
-    if tautot0 ge tautot5  and k1 eq 0 then begin 
+    if tautot0 ge tautot5  and k1 eq 0 then begin
     	v90a = x(i)
     	k1 = 1
-    endif 
-    if tautot0 ge tautot95  and k2 eq 0 then begin 
+    endif
+    if tautot0 ge tautot95  and k2 eq 0 then begin
     	v90b = x(i)
     	k2 = 1
-    endif 
-endfor 
+    endif
+endfor
     dv90 =  v90b - v90a
 
 
@@ -166,6 +166,5 @@ endfor
 ;
 ;Return to caller.
 ;
-  RETURN  
+  RETURN
   END
-  	
