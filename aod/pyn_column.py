@@ -32,10 +32,18 @@ def integrate_column(velocity, flux, flux_err,
     # Some constants and flags
     column_factor = 2.654e-15
     flag_sat = False
-
-    int_idx = np.full(np.size(velocity),False)
-    xlim1, xlim2 = xlimit(velocity,integration_limits)
-    int_idx[xlim1:xlim2] = True
+    # Define the limits of the integration:
+    if not integration_limits:
+        integration_limits = [spec['v1'],spec['v2']]
+        int_idx = np.full(np.size(velocity),False)
+        xlim1, xlim2 = \
+            xlimit(velocity,[spec['v1'],spec['v2']])
+        int_idx[xlim1:xlim2] = True
+    else:
+        int_idx = np.full(np.size(velocity),False)
+        xlim1, xlim2 = \
+            xlimit(velocity,integration_limits)
+        int_idx[xlim1:xlim2] = True
 
     #Define the velocity spacing
     delv = np.median(velocity[1:]-velocity[:-1])
@@ -66,9 +74,9 @@ def integrate_column(velocity, flux, flux_err,
     # Error in the column
     column_err = tau_int_err/(wavc*fval*column_factor)
 
-    # Continuum error
+    # Continuum error: errors are correlated, so don't add in quadrature.
     column_err_cont = \
-        np.sum(((continuum_err/continuum)*delv)) /\
+        np.sum(((continuum_err[int_idx]/continuum[int_idx])*delv)) /\
          (wavc*fval*column_factor)
 
     # Background uncertainty
@@ -83,7 +91,7 @@ def integrate_column(velocity, flux, flux_err,
     column_err_total = np.sqrt(column_err**2 \
         +column_err_cont**2)
 
-#     return column, column_err, column_err_cont, column_err_zero
+    return column, column_err_total
 
 
 def pyn_column(spec_in,integration_limits = None):
@@ -168,6 +176,8 @@ def pyn_column(spec_in,integration_limits = None):
 
     spec['v1'] = integration_limits[0]
     spec['v2'] = integration_limits[1]
+    spec['vaod1'] = integration_limits[0]
+    spec['vaod2'] = integration_limits[1]
 
     spec['ncol'] = np.log10(column)
     spec['necol1'] = column_err_total/column*np.log10(np.e)
