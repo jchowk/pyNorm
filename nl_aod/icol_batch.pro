@@ -4,7 +4,7 @@
 ;
 ;Program Description:
 ;       This procedure calculates the apparent column density, equivalent width,
-;       and line statistics. 
+;       and line statistics.
 ;
 ;Restrictions:
 ;       None
@@ -26,11 +26,11 @@
 ;               fval    :== laboratory f-value of line
 ;
 ;On Ouptut:
-;               storing inputs and outputs with possibility to save them at 
+;               storing inputs and outputs with possibility to save them at
 ;               the end the session
 ;
 ;Common Blocks / Structures:
-;       SHARE: inputs and outputs. 
+;       SHARE: inputs and outputs.
 ;       FLAGSAT
 ;
 ;Latest Update Comments:
@@ -47,7 +47,7 @@ PRO iCOL_BATCH,x,y,ey,ycon,sigma,ycon_sig,wavc,fval,vbatch1,vbatch2, ncol,ncole1
   common FLAGSAT, flag_sat
     v90a = 0
     v90b = 0
-        IF N_PARAMS() EQ 0 THEN BEGIN MAN,'icol_batch' & RETURN & ENDIF
+        ; IF N_PARAMS() EQ 0 THEN BEGIN MAN,'icol_batch' & RETURN & ENDIF
 ;
 ;Error control
 ;
@@ -66,7 +66,7 @@ PRO iCOL_BATCH,x,y,ey,ycon,sigma,ycon_sig,wavc,fval,vbatch1,vbatch2, ncol,ncole1
 ;
     xpos1 = vbatch1 > MIN(x)  &  !c = 0
     xpos2 = vbatch2< MAX(x)  &  !c = 0
-    
+
 
         IF xpos1 GT xpos2 THEN BEGIN
                 PRINT,'iCOL_PREP_BATCH::  '$
@@ -78,25 +78,25 @@ PRO iCOL_BATCH,x,y,ey,ycon,sigma,ycon_sig,wavc,fval,vbatch1,vbatch2, ncol,ncole1
 ;in line.  XLIMIT will find points in between limits, but be sure to set
 ;endpoints of integration equal to the limits.
 ;
-    v1 = xpos1 
-    v2 = xpos2  
+    v1 = xpos1
+    v2 = xpos2
 
-        XLIMIT,x,xpos1,xpos2,x1,x2	
-        xwork = [xpos1,x(x1:x2),xpos2]
-        ywork = [INTERPOL(y,x,xpos1),y(x1:x2),INTERPOL(y,x,xpos2)]
-	eywork = [INTERPOL(ey,x,xpos1),ey(x1:x2),INTERPOL(ey,x,xpos2)]
-        yconwork = [INTERPOL(ycon,x,xpos1),ycon(x1:x2),INTERPOL(ycon,x,xpos2)]
-        ycolwork = [INTERPOL(ycol,x,xpos1),ycol(x1:x2),INTERPOL(ycol,x,xpos2)]
-        ycon_sig_work = [INTERPOL(ycon_sig,x,xpos1),ycon_sig(x1:x2)]
+        XLIMIT,x,xpos1,xpos2,x1,x2
+        xwork = [xpos1,x[x1:x2],xpos2]
+        ywork = [INTERPOL(y,x,xpos1),y[x1:x2],INTERPOL(y,x,xpos2)]
+	    eywork = [INTERPOL(ey,x,xpos1),ey[x1:x2],INTERPOL(ey,x,xpos2)]
+        yconwork = [INTERPOL(ycon,x,xpos1),ycon[x1:x2],INTERPOL(ycon,x,xpos2)]
+        ycolwork = [INTERPOL(ycol,x,xpos1),ycol[x1:x2],INTERPOL(ycol,x,xpos2)]
+        ycon_sig_work = [INTERPOL(ycon_sig,x,xpos1),ycon_sig[x1:x2]]
         ycon_sig_work = [ycon_sig_work,INTERPOL(ycon_sig,x,xpos2)]
 ; what error to use....
     	 if eyflag ne 0 then begin
         PRINT,'iCOL_PREP_BATCH::  Error Vector provided'
         y_sig_work = eywork
         kind = 'u'
-        endif 
+        endif
     	    if eyflag eq 0 then begin
-    	    if kind ne !NULL then begin 
+    	    if kind ne !NULL then begin
             	IF kind EQ 'f' THEN BEGIN
                 PRINT,'iCOL_PREP_BATCH::  Fixed pattern noise assumed'
                 y_sig_work = sigma + FLTARR(N_ELEMENTS(ywork))
@@ -106,15 +106,15 @@ PRO iCOL_BATCH,x,y,ey,ycon,sigma,ycon_sig,wavc,fval,vbatch1,vbatch2, ncol,ncole1
                 y_sig_work = sigma * SQRT(abs(ywork)/yconwork)
             endif
 	    endif
-    	    if kind eq !NULL then begin 
+    	    if kind eq !NULL then begin
             print,'iCOL_PREP_BATCH:: The errors are not defined'
             print,'iCOL_PREP_BATCH:: FP will be assumed'
             y_sig_work = sigma + FLTARR(N_ELEMENTS(ywork))
             kind = 'f'
             endif
 	endif
-; save noise variable 
-         set_noise = kind          
+; save noise variable
+         set_noise = kind
 
 ;
 ;Calculate the column density and error by calling iCOL
@@ -137,7 +137,7 @@ if flag_sat eq 0 then begin
 	ncole1 = ALOG10(col+tot_err) - ALOG10(col)
 	ncole2 = -ALOG10(col-tot_err) + ALOG10(col)
 	ncolez = ALOG10(col+zero_err)-ALOG10(col)
-endif 
+endif
 if flag_sat eq 1 then begin
         PRINT,'--------------------------------------------'
     PRINT,'log N   > ',STRING(ALOG10(col),'(F9.3)')
@@ -146,33 +146,33 @@ if flag_sat eq 1 then begin
   ncole1 = 1
   ncole2 = 1
   ncolez = 1
-endif	
+endif
 ;------------------------------------------------------------------------------
 ;
 xpos1 = v1
-xpos2 = v2 
+xpos2 = v2
         XLIMIT,x,xpos1,xpos2,x1,x2
-        xwork    = x(x1:x2)
-        ywork    = y(x1:x2)
-        eywork   = ey(x1:x2)
-        yconwork = ycon(x1:x2)
-        ycon_sig_work = ycon_sig(x1:x2)
- 
+        xwork    = x[x1:x2]
+        ywork    = y[x1:x2]
+        eywork   = ey[x1:x2]
+        yconwork = ycon[x1:x2]
+        ycon_sig_work = ycon_sig[x1:x2]
+
 
 ;
 ;Ask about what kind of statistics should be used (poisson or fixed pattern)
 ;to describe the noise characteristics of the data.
 ;
- 
+
         IF kind EQ 'f' THEN BEGIN
                 y_sig_work = sigma + FLTARR(N_ELEMENTS(ywork))
-        endif else if kind eq 'u' then begin 
+        endif else if kind eq 'u' then begin
         y_sig_work = eywork
-        endif else if kind eq 'p' then begin 
+        endif else if kind eq 'p' then begin
              y_sig_work = sigma * SQRT(abs(ywork)/yconwork)
-         endif  
+         endif
 
- 
+
 
 ;Calculate line statistics.
 ;
@@ -197,35 +197,35 @@ xpos2 = v2
 ;------------------------------------------------------------------------------
 ;
 ;Calculate equivalent width and associated errors (cont ,stat, tot).
-; change first velocity to wavelength 
+; change first velocity to wavelength
 ;
 xpos1 = v1
-xpos2 = v2 
-               xpos1 = iAXIS(xpos1,wavc,1) 
+xpos2 = v2
+               xpos1 = iAXIS(xpos1,wavc,1)
                xpos2 = iAXIS(xpos2,wavc,1)
-               x  = iAXIS(x,wavc,1) 
+               x  = iAXIS(x,wavc,1)
         XLIMIT,x,xpos1,xpos2,x1,x2
-        xwork = [xpos1,x(x1:x2),xpos2]
-        ywork = [INTERPOL(y,x,xpos1),y(x1:x2),INTERPOL(y,x,xpos2)]
-        eywork = [INTERPOL(ey,x,xpos1),ey(x1:x2),INTERPOL(ey,x,xpos2)]
-        yconwork = [INTERPOL(ycon,x,xpos1),ycon(x1:x2),INTERPOL(ycon,x,xpos2)]
-        ycon_sig_work = [INTERPOL(ycon_sig,x,xpos1),ycon_sig(x1:x2)]
+        xwork = [xpos1,x[x1:x2],xpos2]
+        ywork = [INTERPOL(y,x,xpos1),y[x1:x2],INTERPOL(y,x,xpos2)]
+        eywork = [INTERPOL(ey,x,xpos1),ey[x1:x2],INTERPOL(ey,x,xpos2)]
+        yconwork = [INTERPOL(ycon,x,xpos1),ycon[x1:x2],INTERPOL(ycon,x,xpos2)]
+        ycon_sig_work = [INTERPOL(ycon_sig,x,xpos1),ycon_sig[x1:x2]]
         ycon_sig_work = [ycon_sig_work,INTERPOL(ycon_sig,x,xpos2)]
- 
+
 ;
 ;Ask about what kind of statistics should be used (poisson or fixed pattern)
 ;to describe the noise characteristics of the data.
 ;
- 
+
         IF kind EQ 'f' THEN BEGIN
                 y_sig_work = sigma + FLTARR(N_ELEMENTS(ywork))
-        endif else if kind eq 'u' then begin 
+        endif else if kind eq 'u' then begin
         y_sig_work = eywork
-        endif else if kind eq 'p' then begin 
+        endif else if kind eq 'p' then begin
              y_sig_work = sigma * SQRT(abs(ywork)/yconwork)
-         endif  
+         endif
 
-;        
+;
         iEQW,xwork,ywork,yconwork,y_sig_work,ycon_sig_work,ew,y_err,ycon_err,zero_err
         toterr = SQRT(y_err^2 + ycon_err^2)
 ;
@@ -238,7 +238,7 @@ xpos2 = v2
 
 ;
 ;Print information dump.  Equivalent widths in mA.
-; 
+;
   w    = ew * 1000.0
   w_es =  y_err * 1000.0
   w_ec =  ycon_err * 1000.0
@@ -255,12 +255,11 @@ xpos2 = v2
         PRINT,'3sigma N     < ',STRING(col3sig,'(F9.2)')
         PRINT,'2sigma N     < ',STRING(col2sig,'(F9.2)')
         PRINT,'--------------------------------------------'
- ;return to velocity                    
-  x  = iAXIS(x,wavc,-1) 
+ ;return to velocity
+  x  = iAXIS(x,wavc,-1)
 
- 
-         RETURN 
+
+         RETURN
 ESCAPE:
         PRINT,'iCOL_BATCH:: '+!err_string
         RETURN  &  END
-
