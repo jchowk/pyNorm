@@ -86,7 +86,9 @@ def integrate_column(velocity, flux, flux_err,
 #     return column, column_err, column_err_cont, column_err_zero
 
 
-def pyn_column(spec,integration_limits = None):
+def pyn_column(spec_in,integration_limits = None):
+
+    spec = spec_in.copy()
 
     # FIX NON-WRITEABLE ARRAYS due to discontiguous
     # memory in some readsav inputs
@@ -147,9 +149,9 @@ def pyn_column(spec,integration_limits = None):
     # Error in the column
     column_err = tau_int_err/(wavc*fval*column_factor)
 
-    # Continuum error
+    # Continuum error: errors are correlated, so don't add in quadrature.
     column_err_cont = \
-        np.sum(((continuum_err/continuum)*delv)) /\
+        np.sum(((continuum_err[int_idx]/continuum[int_idx])*delv)) /\
          (wavc*fval*column_factor)
 
     # Background uncertainty
@@ -163,3 +165,12 @@ def pyn_column(spec,integration_limits = None):
     # Combine errors
     column_err_total = np.sqrt(column_err**2 \
         +column_err_cont**2)
+
+    spec['v1'] = integration_limits[0]
+    spec['v2'] = integration_limits[1]
+
+    spec['ncol'] = np.log10(column)
+    spec['necol1'] = column_err_total/column*np.log10(np.e)
+    spec['necol2'] = column_err_total/column*np.log10(np.e)
+
+    return spec
