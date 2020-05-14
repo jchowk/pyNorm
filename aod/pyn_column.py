@@ -110,10 +110,17 @@ def pyn_column(spec_in,integration_limits = None):
     velocity = spec['vel'].copy()
     flux = spec['flux'].copy()
     flux_err = spec['eflux'].copy()
-    continuum = spec['ycon'].copy()
-    continuum_err = spec['ycon_sig'].copy()
     wavc=spec['wavc'].copy()
     fval=spec['fval'].copy()
+
+    # Deal with the continuum:
+    try:
+        continuum=spec['ycon'].copy()
+        continuum_err = spec['ycon_sig'].copy()
+    except:
+        continuum=spec['cont']
+        continuum_err = spec['econt'].copy()
+
 
     # Define the limits of the integration:
     if not integration_limits:
