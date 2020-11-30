@@ -536,6 +536,7 @@ def pyn_batch(spec_in,integration_limits = None, verbose = True):
     if verbose:
         print('pyn_batch: Wavelength = {0:0.3f}'.format(spec['wavc']))
         print('pyn_batch: f-value = {0:0.3f}'.format(spec['fval']))
+        print('\nVelocity range of integration: {0:0.1f} <= v <= {1:0.1f}'.format(spec['v1'],spec['v2']))
 
         print('\n'+dashes)
         # Print column densities:
