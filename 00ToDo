@@ -1,5 +1,5 @@
 [ ] Start with XSpectrum1D??
 [ ] Load data method
 [ ] Integrate over partial pixels (interpolate)
-[ ] EW calc
+[x] EW calc
 [ ] Limit flags
