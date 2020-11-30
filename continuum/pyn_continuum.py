@@ -1,60 +1,13 @@
-"""
-Kenneth Sembach
-				LEGFIT.PRO
-
-Created: 04/23/91
-Last Revised: 05/02/99
-
-Program Description:
-	This procedure calculates a Legendre polynomial fit to data.  Derived
-       from procedure similar to that given by Bevington (1969).
-
-Restrictions:
-	None
-
-Screen Output:
-	None
-
-Use:
-	LEGFIT,x,y,minord,maxord,yfit,a,eps,chi2
-
-On Input:
-		x	:== abscissa array
-		y	:== ordinate array
-		minord	:== minimum order to start fit
-		maxord	:== maximum order to terminate fit
-
-On Output:
-		yfit	:== fitted array (over x)
-		a	:== coefficients of fit
-		eps	:== error matrix
-		chi2	:== chi-squared for fit (by definition = sigma^2 here)
-                           We use uniform weighting = 1 here, and let sigma
-                           be goodness of fit.
-
-Common Blocks / Structures:
-	None
-
-Latest Update Comments:
-	10/08/92  KRS	- Now runs under Version 2 IDL.
-	05/02/99  KRS	- Documentation updates
-
-External Routines Called:
-	FTEST		- to check for need for another term in polynomial
-"""
-
-from __future__ import print_function
-
-from numpy import *
-
-def LEGFIT(x, y, minord, maxord, yfit, a, eps, chi2):
+def LEGFIT(spec, minord, maxord):
+    """
+    Fit Legendre polynomial continua
     """
 
-    Flags and counters.
-    """
+    def _ret():  return spec
 
-    n_params = 8
-    def _ret():  return (x, y, minord, maxord, yfit, a, eps, chi2)
+    x = spec['velocity'].copy()
+    y = spec['flux'].copy()
+
 
     nflag = 0
     nord = maxord
@@ -62,31 +15,30 @@ def LEGFIT(x, y, minord, maxord, yfit, a, eps, chi2):
     #Array subscript length and vector.
     #
     nx = x.size
-    ix = arange(nx, dtype=int32)
-    #
+    ix = np.arange(nx, dtype=int32)
+
     #Form legendre polynomial.
-    #
-    p = zeros([maxord + 1, nx], "float32")
+    p = np.zeros([maxord + 1, nx], "float32")
     p[ix] = 1.
     p[ix + nx] = x
-    for j in arange(2., (maxord)+(1)):
+    for j in np.arange(2., (maxord)+(1)):
         p(ix + j * nx) = ((2. * j - 1.) * x * p[j - 1,:] - (j - 1) * p[j - 2,:]) / j
     #
     #Begin loop to do fit.
     #
-    for nord in arange(minord, (maxord)+(1)):
+    for nord in np.arange(minord, (maxord)+(1)):
 
     ## LOOP:
         ncoeff = nord + 1
         #
         #Form alpha and beta matrices.
         #
-        beta = zeros([nord + 1], "float32")
-        alpha = zeros([nord + 1, nord + 1], "float32")
-        for k in arange(0, (nord)+(1)):
+        beta = np.zeros([nord + 1], "float32")
+        alpha = np.zeros([nord + 1, nord + 1], "float32")
+        for k in np.arange(0, (nord)+(1)):
             beta(k) = TOTAL(y * p[k,:])
-        for k in arange(0, (nord)+(1)):
-            for j in arange(0, (nord)+(1)):
+        for k in np.arange(0, (nord)+(1)):
+            for j in np.arange(0, (nord)+(1)):
                 alpha(j, k) = TOTAL(p[j,:] * p[k,:])
         #
         #Invert alpha matrix ==> error matrix eps.
@@ -96,8 +48,8 @@ def LEGFIT(x, y, minord, maxord, yfit, a, eps, chi2):
         #Calculate coefficients and fit.
         #
         a = transpose(matrixmultiply(transpose(beta), transpose(eps)))
-        yfit = zeros([nx], "float32")
-        for j in arange(0, (nord)+(1)):
+        yfit = np.zeros([nx], "float32")
+        for j in np.arange(0, (nord)+(1)):
             yfit = yfit + a(j) * p[j,:]
         #
         #Calculate chi squared of fit - uniform weighting=1.
