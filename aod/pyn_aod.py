@@ -207,6 +207,7 @@ def pyn_eqwidth(spec_in,integration_limits = None):
 
     # Some constants and flags
     column_factor = 2.654e-15
+    ew_factor = 1.13e17
     lightspeed = 2.998e5 # km/s
     flag_sat = False
 
@@ -245,7 +246,7 @@ def pyn_eqwidth(spec_in,integration_limits = None):
     try:
         wave=spec['wave'].copy()
     except:
-        wave = spec['wavc']*(velocity/lightspeed)+wavc
+        wave = spec['wavc']*(velocity/lightspeed)+spec['wavc']
         spec['wave'] = wave
 
     # Wavelength spacing
@@ -279,8 +280,36 @@ def pyn_eqwidth(spec_in,integration_limits = None):
     spec['EW_cont_err'] = eqw_cont_err*1000.
     spec['EW_zero_err'] = eqw_zero_err*1000.
 
+    # Add the cumulative EW
     spec['EW_cumulative'] = \
       np.cumsum((1.-flux[int_idx]/continuum[int_idx])*delw)*1000.
+
+    # Calculate linear column density and error.
+    linear_ncol = \
+      ew_factor*spec['EW']/(spec['fval']*spec['wavc']**2)
+    linear_ncol2sig = 2.0* \
+      ew_factor*spec['EW_err']/(spec['fval']*spec['wavc']**2)
+    linear_ncol3sig = 3.0* \
+      ew_factor*spec['EW_err']/(spec['fval']*spec['wavc']**2)
+
+    # Fill the output column densities
+    spec['ncol_linearCoG'] = np.round(np.log10(linear_ncol),4)
+    spec['ncol_linear2sig'] = \
+        np.round(np.log10(linear_ncol2sig),4)
+    spec['ncol_linear3sig'] = \
+        np.round(np.log10(linear_ncol3sig),4)
+
+    # Is the line detected at 2, 3 sigma?
+    if spec['EW'] >= 2.*spec['EW_err']:
+        spec['detection_2sig'] = True
+    else:
+        spec['detection_2sig'] = False
+
+    if spec['EW'] >= 3.*spec['EW_err']:
+        spec['detection_3sig'] = True
+    else:
+        spec['detection_3sig'] = False
+
 
     # Delete the old versions of the EW quantities
     try:
@@ -289,7 +318,25 @@ def pyn_eqwidth(spec_in,integration_limits = None):
         del spec['w_ec']
         del spec['w_et']
         del spec['w_ez']
+        del spec['col2sig']
+        del spec['col3sig']
     except:
         pass
 
     return spec
+
+
+def pyn_eqwidth(spec_in,integration_limits = None):
+
+    spec = spec_in.copy()
+
+    # FIX NON-WRITEABLE ARRAYS due to discontiguous
+    # memory in some readsav inputs
+    if ~spec['vel'].flags.writeable:
+        spec = fix_unwriteable_spec(spec)
+
+    # Some constants and flags
+    column_factor = 2.654e-15
+    ew_factor = 1.13e17
+    lightspeed = 2.998e5 # km/s
+    flag_sat = False
