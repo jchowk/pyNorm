@@ -282,6 +282,7 @@ def pyn_eqwidth(spec_in,integration_limits = None):
     spec['EW_cumulative'] = \
       np.cumsum((1.-flux[int_idx]/continuum[int_idx])*delw)*1000.
 
+    # Delete the old versions of the EW quantities
     try:
         del spec['w']
         del spec['w_es']
