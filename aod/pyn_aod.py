@@ -28,10 +28,13 @@ def xlimit(x, limits):
 def integrate_column(velocity, flux, flux_err,
                 continuum, continuum_err, wavc, fval,
                 integration_limits = [-100,100]):
+    # TODO: Asymmetrical error bars?
 
     # Some constants and flags
     column_factor = 2.654e-15
     flag_sat = False
+
+    # TODO: Adjust integration limits to reflect whole pixels used.
     # Define the limits of the integration:
     if not integration_limits:
         integration_limits = [spec['v1'],spec['v2']]
@@ -189,5 +192,135 @@ def pyn_column(spec_in,integration_limits = None):
     spec['ncol'] = np.log10(column)
     spec['necol1'] = column_err_total/column*np.log10(np.e)
     spec['necol2'] = column_err_total/column*np.log10(np.e)
+
+    return spec
+
+
+def pyn_eqwidth(spec_in,integration_limits = None):
+
+    spec = spec_in.copy()
+
+    # FIX NON-WRITEABLE ARRAYS due to discontiguous
+    # memory in some readsav inputs
+    if ~spec['vel'].flags.writeable:
+        spec = fix_unwriteable_spec(spec)
+
+    # Some constants and flags
+    column_factor = 2.654e-15
+    ew_factor = 1.13e17
+    lightspeed = 2.998e5 # km/s
+    flag_sat = False
+
+    velocity = spec['vel'].copy()
+    flux = spec['flux'].copy()
+    flux_err = spec['eflux'].copy()
+    wavc=spec['wavc'].copy()
+    fval=spec['fval'].copy()
+
+    # Deal with the continuum:
+    try:
+        continuum=spec['ycon'].copy()
+        continuum_err = spec['ycon_sig'].copy()
+    except:
+        continuum=spec['cont']
+        continuum_err = spec['econt'].copy()
+
+
+    # Define the limits of the integration:
+    if not integration_limits:
+        integration_limits = [spec['v1'],spec['v2']]
+        int_idx = np.full(np.size(velocity),False)
+        xlim1, xlim2 = \
+            xlimit(velocity,[spec['v1'],spec['v2']])
+        int_idx[xlim1:xlim2] = True
+    else:
+        int_idx = np.full(np.size(velocity),False)
+        xlim1, xlim2 = \
+            xlimit(velocity,integration_limits)
+        int_idx[xlim1:xlim2] = True
+
+    #Define the velocity spacing
+    delv = np.median(velocity[1:]-velocity[:-1])
+
+    # Create the wavelength array
+    try:
+        wave=spec['wave'].copy()
+    except:
+        wave = spec['wavc']*(velocity/lightspeed)+spec['wavc']
+        spec['wave'] = wave
+
+    # Wavelength spacing
+    delw = np.median(wave[1:]-wave[:-1])
+
+    # Calculate the equivalent width
+    eqw_int = np.sum((1.-flux[int_idx]/continuum[int_idx])*delw)
+
+    # Random flux errors
+    eqw_stat_err = \
+        np.sqrt(np.sum((flux_err[int_idx]/continuum[int_idx]*delw)**2))
+    # Continuum errors
+    eqw_cont_err = \
+        np.sum(continuum_err[int_idx]*(flux[int_idx]/continuum[int_idx]**2)*delw)
+    # Zero point error
+    # TODO: Check this calculation
+    z_eps = 0.01
+    eqw_zero_err = z_eps*eqw_int
+
+    # Combine errors
+    eqw_err = np.sqrt(eqw_stat_err**2 \
+        +eqw_cont_err**2 + eqw_zero_err**2)
+
+    spec['v1'] = integration_limits[0]
+    spec['v2'] = integration_limits[1]
+
+    # Store the EW in milliAngstrom
+    spec['EW'] = eqw_int*1000.
+    spec['EW_err'] = eqw_err*1000.
+    spec['EW_stat_err'] = eqw_stat_err*1000.
+    spec['EW_cont_err'] = eqw_cont_err*1000.
+    spec['EW_zero_err'] = eqw_zero_err*1000.
+
+    # Add the cumulative EW
+    spec['EW_cumulative'] = \
+      np.cumsum((1.-flux[int_idx]/continuum[int_idx])*delw)*1000.
+
+    # Calculate linear column density and error.
+    linear_ncol = \
+      ew_factor*spec['EW']/(spec['fval']*spec['wavc']**2)
+    linear_ncol2sig = 2.0* \
+      ew_factor*spec['EW_err']/(spec['fval']*spec['wavc']**2)
+    linear_ncol3sig = 3.0* \
+      ew_factor*spec['EW_err']/(spec['fval']*spec['wavc']**2)
+
+    # Fill the output column densities
+    spec['ncol_linearCoG'] = np.round(np.log10(linear_ncol),4)
+    spec['ncol_linear2sig'] = \
+        np.round(np.log10(linear_ncol2sig),4)
+    spec['ncol_linear3sig'] = \
+        np.round(np.log10(linear_ncol3sig),4)
+
+    # Is the line detected at 2, 3 sigma?
+    if spec['EW'] >= 2.*spec['EW_err']:
+        spec['detection_2sig'] = True
+    else:
+        spec['detection_2sig'] = False
+
+    if spec['EW'] >= 3.*spec['EW_err']:
+        spec['detection_3sig'] = True
+    else:
+        spec['detection_3sig'] = False
+
+
+    # Delete the old versions of the EW quantities
+    try:
+        del spec['w']
+        del spec['w_es']
+        del spec['w_ec']
+        del spec['w_et']
+        del spec['w_ez']
+        del spec['col2sig']
+        del spec['col3sig']
+    except:
+        pass
 
     return spec
