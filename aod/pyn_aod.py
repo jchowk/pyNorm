@@ -324,19 +324,3 @@ def pyn_eqwidth(spec_in,integration_limits = None):
         pass
 
     return spec
-
-
-def pyn_eqwidth(spec_in,integration_limits = None):
-
-    spec = spec_in.copy()
-
-    # FIX NON-WRITEABLE ARRAYS due to discontiguous
-    # memory in some readsav inputs
-    if ~spec['vel'].flags.writeable:
-        spec = fix_unwriteable_spec(spec)
-
-    # Some constants and flags
-    column_factor = 2.654e-15
-    ew_factor = 1.13e17
-    lightspeed = 2.998e5 # km/s
-    flag_sat = False
