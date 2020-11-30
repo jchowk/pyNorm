@@ -38,18 +38,19 @@ def integrate_column(velocity, flux, flux_err,
     # Define the limits of the integration:
     if not integration_limits:
         integration_limits = [spec['v1'],spec['v2']]
-        int_idx = np.full(np.size(velocity),False)
+        idx = np.full(np.size(velocity),False)
         xlim1, xlim2 = \
             xlimit(velocity,[spec['v1'],spec['v2']])
-        int_idx[xlim1:xlim2] = True
+        idx[xlim1:xlim2] = True
     else:
-        int_idx = np.full(np.size(velocity),False)
+        idx = np.full(np.size(velocity),False)
         xlim1, xlim2 = \
             xlimit(velocity,integration_limits)
-        int_idx[xlim1:xlim2] = True
+        idx[xlim1:xlim2] = True
 
-    #Define the velocity spacing
-    delv = np.median(velocity[1:]-velocity[:-1])
+    # An array of delta v:
+    delv = velocity[1:]-velocity[:-1]
+    delv = np.concatenate((delv,[delv[-1]]))
 
     # Test for clearly saturated pixels:
     idx_saturation = (flux <= 0.)
@@ -63,9 +64,9 @@ def integrate_column(velocity, flux, flux_err,
     tau_array = np.log(continuum / flux)
     tau_array_err = np.sqrt((flux_err/flux)**2)
 
-    tau_int = np.sum(tau_array[int_idx]*delv)
+    tau_int = np.sum(tau_array[idx]*delv[idx])
     tau_int_err = \
-     np.sqrt(np.sum((tau_array_err[int_idx]*delv)**2))
+     np.sqrt(np.sum((tau_array_err[idx]*delv[idx])**2))
 
     # Create an apparent column density array
     nav_array = tau_array/(wavc*fval*column_factor)
@@ -79,14 +80,14 @@ def integrate_column(velocity, flux, flux_err,
 
     # Continuum error: errors are correlated, so don't add in quadrature.
     column_err_cont = \
-        np.sum(((continuum_err[int_idx]/continuum[int_idx])*delv)) /\
+        np.sum(((continuum_err[idx]/continuum[idx])*delv[idx])) /\
          (wavc*fval*column_factor)
 
     # Background uncertainty
     z_eps = 0.01  # Fractional bg error
-    yc1 = continuum[int_idx]*(1.-z_eps)
-    y1  = flux[int_idx]-continuum[int_idx]*z_eps
-    tau1 = np.sum(np.log(yc1/y1)*delv)
+    yc1 = continuum[idx]*(1.-z_eps)
+    y1  = flux[idx]-continuum[idx]*z_eps
+    tau1 = np.sum(np.log(yc1/y1)*delv[idx])
     col1 = tau1 / (wavc*fval*column_factor)
     column_err_zero = np.abs(col1-column)
 
@@ -119,27 +120,31 @@ def pyn_column(spec_in,integration_limits = None):
     # Deal with the continuum:
     try:
         continuum=spec['ycon'].copy()
+    except:
+        continuum=spec['cont'].copy()
+
+    try:
         continuum_err = spec['ycon_sig'].copy()
     except:
-        continuum=spec['cont']
         continuum_err = spec['econt'].copy()
 
 
     # Define the limits of the integration:
     if not integration_limits:
         integration_limits = [spec['v1'],spec['v2']]
-        int_idx = np.full(np.size(velocity),False)
+        idx = np.full(np.size(velocity),False)
         xlim1, xlim2 = \
             xlimit(velocity,[spec['v1'],spec['v2']])
-        int_idx[xlim1:xlim2] = True
+        idx[xlim1:xlim2] = True
     else:
-        int_idx = np.full(np.size(velocity),False)
+        idx = np.full(np.size(velocity),False)
         xlim1, xlim2 = \
             xlimit(velocity,integration_limits)
-        int_idx[xlim1:xlim2] = True
+        idx[xlim1:xlim2] = True
 
-    #Define the velocity spacing
-    delv = np.median(velocity[1:]-velocity[:-1])
+    # An array of delta v:
+    delv = velocity[1:]-velocity[:-1]
+    delv = np.concatenate((delv,[delv[-1]]))
 
     # Test for clearly saturated pixels:
     idx_saturation = (flux <= 0.)
@@ -153,13 +158,16 @@ def pyn_column(spec_in,integration_limits = None):
     tau_array = np.log(continuum / flux)
     tau_array_err = np.sqrt((flux_err/flux)**2)
 
-    tau_int = np.sum(tau_array[int_idx]*delv)
+    tau_int = np.sum(tau_array[idx]*delv[idx])
     tau_int_err = \
-     np.sqrt(np.sum((tau_array_err[int_idx]*delv)**2))
+     np.sqrt(np.sum((tau_array_err[idx]*delv[idx])**2))
 
+    # TODO: Include an AOD array in output w/continuum errors.
     # Create an apparent column density array
     nav_array = tau_array/(wavc*fval*column_factor)
     nav_err = tau_array_err/(wavc*fval*column_factor)
+
+
 
     # Integrate the apparent column density profiles
     column = tau_int/(wavc*fval*column_factor)
@@ -169,14 +177,14 @@ def pyn_column(spec_in,integration_limits = None):
 
     # Continuum error: errors are correlated, so don't add in quadrature.
     column_err_cont = \
-        np.sum(((continuum_err[int_idx]/continuum[int_idx])*delv)) /\
+        np.sum(((continuum_err[idx]/continuum[idx])*delv[idx])) /\
          (wavc*fval*column_factor)
 
     # Background uncertainty
     z_eps = 0.01  # Fractional bg error
-    yc1 = continuum[int_idx]*(1.-z_eps)
-    y1  = flux[int_idx]-continuum[int_idx]*z_eps
-    tau1 = np.sum(np.log(yc1/y1)*delv)
+    yc1 = continuum[idx]*(1.-z_eps)
+    y1  = flux[idx]-continuum[idx]*z_eps
+    tau1 = np.sum(np.log(yc1/y1)*delv[idx])
     col1 = tau1 / (wavc*fval*column_factor)
     column_err_zero = np.abs(col1-column)
 
@@ -220,27 +228,30 @@ def pyn_eqwidth(spec_in,integration_limits = None):
     # Deal with the continuum:
     try:
         continuum=spec['ycon'].copy()
+    except:
+        continuum=spec['cont'].copy()
+
+    try:
         continuum_err = spec['ycon_sig'].copy()
     except:
-        continuum=spec['cont']
         continuum_err = spec['econt'].copy()
-
 
     # Define the limits of the integration:
     if not integration_limits:
         integration_limits = [spec['v1'],spec['v2']]
-        int_idx = np.full(np.size(velocity),False)
+        idx = np.full(np.size(velocity),False)
         xlim1, xlim2 = \
             xlimit(velocity,[spec['v1'],spec['v2']])
-        int_idx[xlim1:xlim2] = True
+        idx[xlim1:xlim2] = True
     else:
-        int_idx = np.full(np.size(velocity),False)
+        idx = np.full(np.size(velocity),False)
         xlim1, xlim2 = \
             xlimit(velocity,integration_limits)
-        int_idx[xlim1:xlim2] = True
+        idx[xlim1:xlim2] = True
 
-    #Define the velocity spacing
-    delv = np.median(velocity[1:]-velocity[:-1])
+    # An array of delta v:
+    delv = velocity[1:]-velocity[:-1]
+    delv = np.concatenate((delv,[delv[-1]]))
 
     # Create the wavelength array
     try:
@@ -249,18 +260,19 @@ def pyn_eqwidth(spec_in,integration_limits = None):
         wave = spec['wavc']*(velocity/lightspeed)+spec['wavc']
         spec['wave'] = wave
 
-    # Wavelength spacing
-    delw = np.median(wave[1:]-wave[:-1])
+    # An array of delta wavelength:
+    delw = wave[1:]-wave[:-1]
+    delw = np.concatenate((delw,[delw[-1]]))
 
     # Calculate the equivalent width
-    eqw_int = np.sum((1.-flux[int_idx]/continuum[int_idx])*delw)
+    eqw_int = np.sum((1.-flux[idx]/continuum[idx])*delw[idx])
 
     # Random flux errors
     eqw_stat_err = \
-        np.sqrt(np.sum((flux_err[int_idx]/continuum[int_idx]*delw)**2))
+        np.sqrt(np.sum((flux_err[idx]/continuum[idx]*delw[idx])**2))
     # Continuum errors
     eqw_cont_err = \
-        np.sum(continuum_err[int_idx]*(flux[int_idx]/continuum[int_idx]**2)*delw)
+        np.sum(continuum_err[idx]*(flux[idx]/continuum[idx]**2)*delw[idx])
     # Zero point error
     # TODO: Check this calculation
     z_eps = 0.01
@@ -276,13 +288,13 @@ def pyn_eqwidth(spec_in,integration_limits = None):
     # Store the EW in milliAngstrom
     spec['EW'] = eqw_int*1000.
     spec['EW_err'] = eqw_err*1000.
-    spec['EW_stat_err'] = eqw_stat_err*1000.
-    spec['EW_cont_err'] = eqw_cont_err*1000.
-    spec['EW_zero_err'] = eqw_zero_err*1000.
+    spec['EW_err_stat'] = eqw_stat_err*1000.
+    spec['EW_err_cont'] = eqw_cont_err*1000.
+    spec['EW_err_zero'] = eqw_zero_err*1000.
 
     # Add the cumulative EW
     spec['EW_cumulative'] = \
-      np.cumsum((1.-flux[int_idx]/continuum[int_idx])*delw)*1000.
+      np.cumsum((1.-flux[idx]/continuum[idx])*delw[idx])*1000.
 
     # Calculate linear column density and error.
     linear_ncol = \
@@ -320,6 +332,180 @@ def pyn_eqwidth(spec_in,integration_limits = None):
         del spec['w_ez']
         del spec['col2sig']
         del spec['col3sig']
+    except:
+        pass
+
+    return spec
+
+
+def pyn_istat(spec_in,integration_limits = None):
+
+    spec = spec_in.copy()
+
+    # FIX NON-WRITEABLE ARRAYS due to discontiguous
+    # memory in some readsav inputs
+    if ~spec['vel'].flags.writeable:
+        spec = fix_unwriteable_spec(spec)
+
+    # Some constants and flags
+    column_factor = 2.654e-15
+    ew_factor = 1.13e17
+    lightspeed = 2.998e5 # km/s
+    flag_sat = False
+
+    velocity = spec['vel'].copy()
+    flux = spec['flux'].copy()
+    flux_err = spec['eflux'].copy()
+    wavc=spec['wavc'].copy()
+    fval=spec['fval'].copy()
+
+    # Deal with the continuum:
+    try:
+        continuum=spec['ycon'].copy()
+    except:
+        continuum=spec['cont'].copy()
+
+    try:
+        continuum_err = spec['ycon_sig'].copy()
+    except:
+        continuum_err = spec['econt'].copy()
+
+    # Define the limits of the integration:
+    if not integration_limits:
+        integration_limits = [spec['v1'],spec['v2']]
+        idx = np.full(np.size(velocity),False)
+        xlim1, xlim2 = \
+            xlimit(velocity,[spec['v1'],spec['v2']])
+        idx[xlim1:xlim2] = True
+    else:
+        idx = np.full(np.size(velocity),False)
+        xlim1, xlim2 = \
+            xlimit(velocity,integration_limits)
+        idx[xlim1:xlim2] = True
+
+    # An array of delta v:
+    delv = velocity[1:]-velocity[:-1]
+    delv = np.concatenate((delv,[delv[-1]]))
+
+    # TODO: Saturation?
+    # Calculate the zeroth moment
+    tau = np.log(np.abs(continuum/flux))
+    tau_tot = np.sum(tau[idx]*delv[idx])
+
+
+    # M1
+    # Calculate the first moment (average velocity)
+    a = np.sum(tau[idx]*velocity[idx]*delv[idx])
+    m1 = a/tau_tot
+
+    # M1 error
+    dadi = -1./flux[idx] * velocity[idx] * delv[idx]
+    dadc = 1 / continuum[idx] * velocity[idx] * delv[idx]
+    dwdi = -1./flux[idx] * delv[idx]
+    dwdc = 1 / continuum[idx] * delv[idx]
+
+    dm1di = (tau_tot * dadi - a * dwdi) / tau_tot**2
+    dm1dc = (tau_tot * dadc - a * dwdc) / tau_tot**2
+
+    q1 = np.sqrt(np.sum(flux_err[idx]**2 * dm1di**2))
+    q2 = np.sum(np.sqrt(continuum_err[idx]**2 * dm1dc**2))
+
+    m1err = np.sqrt(q1**2 + q2**2)
+
+
+    # M2
+    # Calculate the second moment (width)
+    b = np.sum(tau[idx]*(velocity[idx] - m1)**2*delv[idx])
+    m2 = np.sqrt(b/tau_tot)
+
+    # M2 error
+    dbdi = -1./flux[idx] * (velocity[idx] - m1)**2 * delv[idx]
+    dbdc = 1./ continuum[idx] * (velocity[idx] - m1)**2 * delv[idx]
+    dbdm1 = -2. * tau[idx] * (velocity[idx] - m1) * delv[idx]
+
+    dm2di = (tau_tot * dbdi - b * dwdi) / tau_tot**2
+    dm2dc = (tau_tot * dbdc - b * dwdc) / tau_tot**2
+    dm2dm1 = dbdm1 / tau_tot
+
+    q1 = np.sqrt(np.sum(flux_err[idx]**2 * dm2di**2))
+    q2 = np.sum(np.sqrt(continuum_err[idx]**2 * dm2dc**2))
+    q3 = np.sqrt(np.sum(m1err**2 * dm2dm1**2))
+
+    m2err = np.sqrt(q1**2 + q2**2 + q3**2)
+    m2err = m2err / (2. * m2)
+
+    # M3
+    # Calculate the third moment (skewness)
+    c = np.sum(tau[idx]*((velocity[idx] - m1)/m2)**3*delv[idx])
+    m3 = c/tau_tot
+
+    # M3 error
+    dfdi = -1./flux[idx] * ((velocity[idx] - m1) / m2)**3 * delv[idx]
+    dfdc = 1./continuum[idx] * ((velocity[idx] - m1) / m2)**3 * delv[idx]
+    dfdm1 = tau[idx]*3.*((velocity[idx] - m1) / m2)**2 * (-1./ m2) * delv[idx]
+    dfdm2 = tau[idx]*3.*((velocity[idx] - m1) / m2)**2 * (m1 - velocity[idx]) / m2**2 * delv[idx]
+
+    dm3di = (tau_tot * dfdi - c * dwdi) / tau_tot**2
+    dm3dc = (tau_tot * dfdc - c * dwdc) / tau_tot**2
+    dm3dm1 = dfdm1 / tau_tot
+    dm3dm2 = dfdm2 / tau_tot
+
+    q1 = np.sqrt(np.sum(flux_err[idx]**2 * dm3di**2))
+    q2 = np.sum(np.sqrt(continuum_err[idx]**2 * dm3dc**2))
+    q3 = np.sqrt(np.sum(m1err**2 * dm3dm1**2))
+    q4 = np.sqrt(np.sum(m2err**2 * dm3dm2**2))
+
+    m3err = np.sqrt(q1**2 + q2**2 + q3**2 + q4**2)
+
+
+    # Calculate the extent (same as m2, except that m1 is assumed to be 0)
+    b4 = np.sum(tau[idx]*(velocity[idx] - 0)**2*delv[idx])
+    m4 = np.sqrt(b4/tau_tot)
+
+    # M4 error
+    dbdi = -1./flux[idx] * (velocity[idx] - 0.0)**2 * delv[idx]
+    dbdc = 1./ continuum[idx] * (velocity[idx] - 0.0)**2 * delv[idx]
+
+    dm4di = (tau_tot * dbdi - b4 * dwdi) / tau_tot**2
+    dm4dc = (tau_tot * dbdc - b4 * dwdc) / tau_tot**2
+
+    q1 = np.sqrt(np.sum(flux_err[idx]**2 * dm4di**2))
+    q2 = np.sum(np.sqrt(continuum_err[idx]**2 * dm4dc**2))
+
+    m4err = np.sqrt(q1**2 + q2**2)
+    m4err = m4err / (2. * m4)
+
+
+    # Velocities at 5% and 95% of total optical depth as dv90
+    tau_cum = np.cumsum(tau[idx]*delv[idx])
+    # 5% limit
+    v90a = (np.abs(tau_cum/tau_tot-0.05)).argmin()
+    v90a = velocity[idx][v90a]
+    # 95% limit
+    v90b = (np.abs(tau_cum/tau_tot-0.95)).argmin()
+    v90b = velocity[idx][v90b]
+
+    # Calculate dv90:
+    dv90 = np.abs(v90b - v90a)
+
+
+    # Fill the spec output
+    spec['va'] = m1
+    spec['va_err'] = m1err
+    spec['ba'] = m2
+    spec['ba_err'] = m2err
+    spec['m3'] = m3
+    spec['m3_err'] = m3err
+
+    spec['dv90'] = dv90
+    spec['v90a'] = v90a
+    spec['v90b'] = v90b
+
+    # Get rid of old-style keywords
+    try:
+        del spec['vaerr']
+        del spec['baerr']
+        del spec['m3err']
     except:
         pass
 
