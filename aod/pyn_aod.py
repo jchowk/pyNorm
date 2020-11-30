@@ -95,7 +95,7 @@ def integrate_column(velocity, flux, flux_err,
     column_err_total = np.sqrt(column_err**2 \
         +column_err_cont**2)
 
-    return column, column_err_total
+    return column, column_err_total, flag_sat
 
 
 def pyn_column(spec_in,integration_limits = None):
@@ -167,8 +167,6 @@ def pyn_column(spec_in,integration_limits = None):
     nav_array = tau_array/(wavc*fval*column_factor)
     nav_err = tau_array_err/(wavc*fval*column_factor)
 
-
-
     # Integrate the apparent column density profiles
     column = tau_int/(wavc*fval*column_factor)
 
@@ -198,8 +196,17 @@ def pyn_column(spec_in,integration_limits = None):
     spec['vaod2'] = integration_limits[1]
 
     spec['ncol'] = np.log10(column)
-    spec['necol1'] = column_err_total/column*np.log10(np.e)
-    spec['necol2'] = column_err_total/column*np.log10(np.e)
+    spec['ncol_err_lo'] = -column_err_total/column*np.log10(np.e)
+    spec['ncol_err_hi'] = column_err_total/column*np.log10(np.e)
+
+    spec['flag_sat'] = flag_sat
+
+    try:
+        del spec['ncole1']
+        del spec['ncole2']
+        del spec['ncolez']
+    except:
+        pass
 
     return spec
 
@@ -217,7 +224,6 @@ def pyn_eqwidth(spec_in,integration_limits = None):
     column_factor = 2.654e-15
     ew_factor = 1.13e17
     lightspeed = 2.998e5 # km/s
-    flag_sat = False
 
     velocity = spec['vel'].copy()
     flux = spec['flux'].copy()
@@ -351,7 +357,6 @@ def pyn_istat(spec_in,integration_limits = None):
     column_factor = 2.654e-15
     ew_factor = 1.13e17
     lightspeed = 2.998e5 # km/s
-    flag_sat = False
 
     velocity = spec['vel'].copy()
     flux = spec['flux'].copy()
@@ -508,5 +513,64 @@ def pyn_istat(spec_in,integration_limits = None):
         del spec['m3err']
     except:
         pass
+
+    return spec
+
+
+
+def pyn_batch(spec_in,integration_limits = None, verbose = True):
+
+    spec = spec_in.copy()
+
+    # FIX NON-WRITEABLE ARRAYS due to discontiguous
+    # memory in some readsav inputs
+    if ~spec['vel'].flags.writeable:
+        spec = fix_unwriteable_spec(spec)
+
+
+    spec = pyn_column(spec,integration_limits)
+    spec = pyn_eqwidth(spec,integration_limits)
+    spec = pyn_istat(spec,integration_limits)
+
+    dashes = '--------------------------------------------'
+    if verbose:
+        print('pyn_batch: Wavelength = {0:0.3f}'.format(spec['wavc']))
+        print('pyn_batch: f-value = {0:0.3f}'.format(spec['fval']))
+
+        print('\n'+dashes)
+        # Print column densities:
+        if spec['flag_sat']:
+            print('***** WARNING: SATURATION IS PRESENT! *****')
+            print(dashes)
+            print('log N > {0:0.3f}'.format(spec['ncol']))
+            print(dashes)
+        else:
+            print('log N = {0:0.3f} ({1:+0.3f}, {2:+0.3f})'.format(\
+                    spec['ncol'],spec['ncol_err_lo'],spec['ncol_err_hi']))
+        print(dashes)
+
+        print('\n'+dashes)
+        print('<v>       = {0:6.2f}  +/- {1:0.2f}'.format(spec['va'], spec['va_err']))
+        print('<b>       = {0:6.2f}  +/- {1:0.2f}'.format(spec['ba'],spec['ba_err']))
+        print('dv90      = {0:6.2f}  +/- {1:0.2f}'.format(spec['dv90'], spec['va_err']*np.sqrt(2)))
+        print('Skew      = {0:6.2f}  +/- {1:0.2f}'.format(spec['m3'],spec['m3_err']))
+        print(dashes)
+
+        ew3sigma = 3.*spec['EW_err']
+
+        print('\n'+dashes)
+        print('EW           = {0:0.2f}'.format(spec['EW']))
+        print('Stat Error   = {0:0.2f}'.format(spec['EW_err_stat']))
+        print('Cont Error   = {0:0.2f}'.format(spec['EW_err_cont']))
+        print('Tot Error    = {0:0.2f}'.format(spec['EW_err']))
+        print('3sigma EW    < {0:0.2f}'.format(ew3sigma))
+        if spec['EW'] < ew3sigma:
+            print('***** WARNING: LINE NOT DETECTED AT 3 SIGMA! *****')
+
+        print('\n')
+        print('Linear COG N = {0:0.2f}'.format(spec['ncol_linearCoG']))
+        print('3sigma N     < {0:0.2f}'.format(spec['ncol_linear3sig']))
+        print('2sigma N     < {0:0.2f}'.format(spec['ncol_linear2sig']))
+        print(dashes)
 
     return spec
