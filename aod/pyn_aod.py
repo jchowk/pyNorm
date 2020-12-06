@@ -562,7 +562,7 @@ def pyn_batch(spec_in,integration_limits = None, verbose = True):
         except:
             pass
         finally:
-            print('pyn_batch: '+spec['ion']+' '+spec['wni'])
+            print('********** '+spec['ion']+' '+spec['wni']+' **********')
 
         print('pyn_batch: Wavelength = {0:0.3f}'.format(spec['wavc']))
         print('pyn_batch: f-value = {0:0.3f}'.format(spec['fval']))
@@ -600,8 +600,8 @@ def pyn_batch(spec_in,integration_limits = None, verbose = True):
 
         print('\n')
         print('Linear COG N = {0:0.2f}'.format(spec['ncol_linearCoG']))
-        print('3sigma N     < {0:0.2f}'.format(spec['ncol_linear3sig']))
         print('2sigma N     < {0:0.2f}'.format(spec['ncol_linear2sig']))
+        print('3sigma N     < {0:0.2f}'.format(spec['ncol_linear3sig']))
         print(dashes)
 
     return spec
