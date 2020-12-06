@@ -1,4 +1,5 @@
-# def legpoly():
+# TODO: Switch to scipy F-test
+# TODO: Switch to numpy Legendre fitting / error analysis
 
 def pyn_ftest(nu, p):
     """
@@ -107,7 +108,7 @@ def legpoly(x,coeff):
     return yfit
 
 
-def legerr(x,y,a,eps):
+def legerr(x,y,a):
     """Warning: assumes uniform weighting for pixels.
     """
     import numpy as np
@@ -152,7 +153,52 @@ def legerr(x,y,a,eps):
 
     return error
 
+def convert_inorm_mask(spec_in):
+    import numpy as np
 
+    spec = spec_in.copy()
+
+    # Extract the mask
+    try:
+        mask = spec['mask_cont']
+    except:
+        return spec
+
+    # Create a boolean mask from original
+    gdcont = (mask == 1)
+    # Find the places where the mask changes.
+    delta = mask-np.roll(mask,1)
+
+    # Identify where the mask transitions are:
+    vstarts = np.where(delta == -1)[0]
+    vstops = np.where(delta == 1)[0]
+    # If the first data point is fitted, adjust the continuum boundaries.
+    if mask[0] == 1:
+        strt = vstops
+        stps = vstarts
+        vstarts = np.concatenate([np.array([0]), strt])
+        vstops = np.concatenate([stps, np.array([np.size(mask)-1])])
+    # Transform the results to velocity ranges:
+    vstarts = spec['vel'][vstarts]
+    vstops = spec['vel'][vstops]
+
+    # # Create a boolean mask from velocity ranges
+    # gdcont = np.repeat(False,np.size(spec['vel']))
+    # for j in np.arange(np.size(vstarts)):
+    #     gdnew = (spec['vel'] >= vstarts[j]) & (spec['vel'] <= vstops[j])
+    #     gdcont = gdcont | gdnew
+
+    spec['contin_mask_bits'] = mask
+    spec['contin_mask_bool'] = gdcont
+    spec['contin_v1'] = vstarts
+    spec['contin_v2'] = vstops
+
+    try:
+        del spec['mask_cont']
+    except:
+        pass
+
+    return spec
 
 def continuum_fit(spec_in, minord, maxord):
     """
@@ -163,19 +209,20 @@ def continuum_fit(spec_in, minord, maxord):
 
     spec = spec_in.copy()
 
+    # Create new-style continuum mask
+    if "mask_cont" in spec:
+        spec = convert_inorm_mask(spec)
     # Which are the continuum regions
-    gd = (spec['mask_cont'] == 1)
+    gd = spec['contin_mask_bool']
 
-    #
+    # Misc.
     nflag = 0
     nord = maxord
 
     # Set the variables for the Legendre fit
-    # TODO: include the continuum masks
-    # x = spec['vel'][gd]/np.max(np.abs(spec['vel'][gd]))
-    # y = spec['flux'][gd]
-    x = spec['vel']/np.max(np.abs(spec['vel']))
-    y = spec['flux'].copy()
+    xmax = np.max(np.abs(spec['vel'][gd]))
+    x = spec['vel'][gd]/xmax
+    y = spec['flux'][gd]
 
     # Array subscript length and vector.
     numpix = x.size
@@ -209,14 +256,84 @@ def continuum_fit(spec_in, minord, maxord):
 
         variance1 = variance
 
-    spec['contin'] = legpoly(spec['vel'],coeff)
-    spec['contin_err'] = legerr(x,y,coeff)
+    spec['contin'] = legpoly(spec['vel']/xmax,coeff)
+    spec['contin_err'] = legerr(spec['vel']/xmax,spec['flux'],coeff)
     spec['contin_order'] = nord
     spec['contin_coeff'] = coeff
 
+    # Normalized continuum
+    spec['vnorm'] = spec['vel']
+    spec['fnorm'] = spec['flux'] / spec['contin']
+    # Continuum error in fnorm
+    spec['fnorm_err_contin'] = spec['contin_err'] / spec['contin']
+    # Statistical error in fnorm
+    try:
+        ferr_stat = spec['eflux']
+    except:
+        ferr_stat = spec['ef']
+    spec['fnorm_err_stat'] = ferr_stat / spec['contin']
+    # Total error in fnorm
+    spec['fnorm_err'] = np.sqrt(spec['fnorm_err_contin']**2 + spec['fnorm_err_stat']**2)
+    # Estimate signal-to-noise ratio in continuum regions
+    spec['SNR'] = np.median(spec['fnorm'][gd]/spec['fnorm_err'][gd])
+
+    # Remove old-style continuum / normalized flux information
     try:
         del spec['ycon']
+        del spec['ycon_sig']
+        del spec['efnorm']
+        del spec['efnorm1']
+        del spec['efnorm2']
+        del spec['maxord']
+        del spec['sn']
     except:
         pass
+
+    return spec
+
+
+def continuum_autofit(spec_in,
+                vshift=0.,vcont = [-1000,1000],
+                vclip = 5.):
+
+    import numpy as np
+
+    spec = spec_in.copy()
+
+    # Make sure velocities are in the right order
+    if vcont[0] > vcont[1]: np.reverse(vcont)
+
+    # TODO: Enable a frame of reference flag [LSR v Helio]
+    # Shift the velocity.
+    spec['vel'] += vshift
+    spec['v1'] += vshift
+    spec['v2'] += vshift
+
+    # Define fitting region for autocontinuum
+    gd = (spec['vel'] >= vcont[0]) & (spec['vel'] <= vcont[1])
+
+    # Extract initial continuum fit region
+    vi1 = spec['vel'][gd]
+    fi1 = spec['flux'][gd]
+    ei1 = spec['eflux'][gd]
+
+    # Set the variables for the Legendre fit
+    xmax = np.max(np.abs(spec['vel'][gd]))
+    x = spec['vel'][gd]/xmax
+    y = spec['flux'][gd]
+
+    # New mask variable
+    mask_cont = gd.copy()
+
+
+    # Cut the spectrum in sub-sections to check regions to be masked.
+    # This should help when flux changes by a large amount over the considered
+    # velocity interval.
+    diffv = (vl2-vl1)/vclip1
+    diffv1  = vl1
+    diffv2   = vl1 + diffv
+
+
+
 
     return spec

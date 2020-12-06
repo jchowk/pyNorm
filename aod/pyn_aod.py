@@ -5,6 +5,7 @@ import numpy as np
 #  -- Arrays are passed as velocity, flux
 #  -- Velocity spacing is constant (enough)
 
+
 def fix_unwriteable_spec(spec):
     # FIX NON-WRITEABLE ARRAYS due to discontiguous memory
     for kkk in spec.keys():
