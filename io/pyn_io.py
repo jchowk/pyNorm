@@ -2,22 +2,37 @@ def read_inorm(input_filename):
     import numpy as np
     from collections import OrderedDict
     from scipy.io import readsav
+    from pyNorm.aod import pyn_batch
 
     # Read the save file:
     spec_in = readsav(input_filename)
+
+    # FIX NON-WRITEABLE ARRAYS due to discontiguous
+    # memory in some readsav inputs
+    if ~spec_in['vel'].flags.writeable:
+        spec_in = __fix_unwriteable_spec(spec_in)
+
 
     # Create the dictionary
     spec = OrderedDict()
 
     # Observation information
-    spec['ion'] = spec_in['ion']
-    spec['wni'] = spec_in['wni']
+    try:
+        spec['ion'] = spec_in['ion'].decode('utf-8')
+        spec['wni'] = spec_in['wni'].decode('utf-8')
+    except:
+        spec['ion'] = spec_in['ion']
+        spec['wni'] = spec_in['wni']
     spec['wavc'] = spec_in['wavc']
     spec['fval'] = spec_in['fval']
     spec['gamma'] = spec_in['gam']
     spec['redshift'] = spec_in['redshift']
-    spec['targname'] = spec_in['targname']
-    spec['object'] = spec_in['object']
+    try:
+        spec['targname'] = spec_in['targname'].decode('utf-8')
+        spec['object'] = spec_in['object'].decode('utf-8')
+    except:
+        spec['targname'] = spec_in['targname']
+        spec['object'] = spec_in['object']
     spec['vlsr'] = spec_in['vlsr']
     spec['RA'] = spec_in['ra']
     spec['Dec'] = spec_in['dec']
@@ -32,7 +47,7 @@ def read_inorm(input_filename):
     #
     # Continuum definition
     spec['contin'] = spec_in['ycon']
-    spec['contin_sig'] = spec_in['ycon_sig']
+    spec['contin_err'] = spec_in['ycon_sig']
     spec['contin_order'] = spec_in['maxord']
     spec['contin_coeff'] = np.array([0,0.])
     #
@@ -88,8 +103,20 @@ def read_inorm(input_filename):
     spec['v90a'] = spec_in['v90a']
     spec['v90b'] = spec_in['v90b']
 
+    # spec = pyn_batch(spec,verbose=False)
 
     return spec
+
+def __fix_unwriteable_spec(spec):
+    import numpy as np
+
+    # FIX NON-WRITEABLE ARRAYS due to discontiguous memory
+    for kkk in spec.keys():
+        if isinstance(spec[kkk],(np.ndarray)):
+            spec[kkk] = spec[kkk].copy()
+
+    return spec
+
 
 def __convert_inorm_mask(spec_in):
     import numpy as np

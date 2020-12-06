@@ -119,15 +119,21 @@ def pyn_column(spec_in,integration_limits = None):
     fval=spec['fval'].copy()
 
     # Deal with the continuum:
-    try:
-        continuum=spec['ycon'].copy()
-    except:
-        continuum=spec['cont'].copy()
+    if "contin" in spec.keys():
+        continuum=spec['contin'].copy()
+    else:
+        try:
+            continuum=spec['cont'].copy()
+        except:
+            continuum=spec['ycon'].copy()
 
-    try:
-        continuum_err = spec['ycon_sig'].copy()
-    except:
-        continuum_err = spec['econt'].copy()
+    if "contin_err" in spec.keys():
+        continuum_err = spec['contin_err'].copy()
+    else:
+        try:
+            continuum_err = spec['econt'].copy()
+        except:
+            continuum_err = spec['ycon_sig'].copy()
 
 
     # Define the limits of the integration:
@@ -232,16 +238,23 @@ def pyn_eqwidth(spec_in,integration_limits = None):
     wavc=spec['wavc'].copy()
     fval=spec['fval'].copy()
 
-    # Deal with the continuum:
-    try:
-        continuum=spec['ycon'].copy()
-    except:
-        continuum=spec['cont'].copy()
+    # Deal with the continuum
+    if "contin" in spec.keys():
+        continuum=spec['contin'].copy()
+    else:
+        try:
+            continuum=spec['cont'].copy()
+        except:
+            continuum=spec['ycon'].copy()
 
-    try:
-        continuum_err = spec['ycon_sig'].copy()
-    except:
-        continuum_err = spec['econt'].copy()
+    if "contin_err" in spec.keys():
+        continuum_err = spec['contin_err'].copy()
+    else:
+        try:
+            continuum_err = spec['econt'].copy()
+        except:
+            continuum_err = spec['ycon_sig'].copy()
+
 
     # Define the limits of the integration:
     if not integration_limits:
@@ -365,16 +378,23 @@ def pyn_istat(spec_in,integration_limits = None):
     wavc=spec['wavc'].copy()
     fval=spec['fval'].copy()
 
-    # Deal with the continuum:
-    try:
-        continuum=spec['ycon'].copy()
-    except:
-        continuum=spec['cont'].copy()
+    # Deal with the continuum
+    if "contin" in spec.keys():
+        continuum=spec['contin'].copy()
+    else:
+        try:
+            continuum=spec['cont'].copy()
+        except:
+            continuum=spec['ycon'].copy()
 
-    try:
-        continuum_err = spec['ycon_sig'].copy()
-    except:
-        continuum_err = spec['econt'].copy()
+    if "contin_err" in spec.keys():
+        continuum_err = spec['contin_err'].copy()
+    else:
+        try:
+            continuum_err = spec['econt'].copy()
+        except:
+            continuum_err = spec['ycon_sig'].copy()
+
 
     # Define the limits of the integration:
     if not integration_limits:
@@ -535,6 +555,15 @@ def pyn_batch(spec_in,integration_limits = None, verbose = True):
 
     dashes = '--------------------------------------------'
     if verbose:
+
+        try:
+            spec['ion'] = spec['ion'].decode('utf-8')
+            spec['wni'] = spec['wni'].decode('utf-8')
+        except:
+            pass
+        finally:
+            print('pyn_batch: '+spec['ion']+' '+spec['wni'])
+
         print('pyn_batch: Wavelength = {0:0.3f}'.format(spec['wavc']))
         print('pyn_batch: f-value = {0:0.3f}'.format(spec['fval']))
         print('\nVelocity range of integration: {0:0.1f} <= v <= {1:0.1f}'.format(spec['v1'],spec['v2']))
