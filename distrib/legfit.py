@@ -49,13 +49,13 @@ from numpy import *
 
 def LEGFIT(x, y, minord, maxord, yfit, a, eps, chi2):
     """
-    
+
     Flags and counters.
     """
 
     n_params = 8
     def _ret():  return (x, y, minord, maxord, yfit, a, eps, chi2)
-    
+
     nflag = 0
     nord = maxord
     #
@@ -75,7 +75,7 @@ def LEGFIT(x, y, minord, maxord, yfit, a, eps, chi2):
     #Begin loop to do fit.
     #
     for nord in arange(minord, (maxord)+(1)):
-    
+
     ## LOOP:
         ncoeff = nord + 1
         #
@@ -110,27 +110,26 @@ def LEGFIT(x, y, minord, maxord, yfit, a, eps, chi2):
         #be kept.  Check probability for "95% confidence".
         #
         # IF nflag EQ 1 THEN  GOTO,OUT
-        if nord > minord:    
+        if nord > minord:
             f = (chisq1 - chisq) / chi2
             fcutoff = FTEST(nx - ncoeff - 1, 0.05)
-            if f < fcutoff:    
+            if f < fcutoff:
                 nord = nord - 1
                 nflag = 1
                 ## GOTO,;; LOOP  ;back up to top to do it over again
         chisq1 = chisq
     # OUT:
     # 	maxord = maxord < nord
-    
-    
-    
+
+
+
     #
     #Calculate errors on coefficients - not used here since uniform weighting of
     #data, but could be used someday.
     #
     #	siga = FLTARR(maxord+1)
     #	FOR j=0,maxord DO siga(j) = SQRT(chi2*eps(j,j))
-    
-    # RETURN
-    
-    return _ret()
 
+    # RETURN
+
+    return _ret()

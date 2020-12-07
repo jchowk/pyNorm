@@ -5,6 +5,7 @@ import numpy as np
 #  -- Arrays are passed as velocity, flux
 #  -- Velocity spacing is constant (enough)
 
+
 def fix_unwriteable_spec(spec):
     # FIX NON-WRITEABLE ARRAYS due to discontiguous memory
     for kkk in spec.keys():
@@ -16,9 +17,6 @@ def fix_unwriteable_spec(spec):
 def xlimit(x, limits):
 
    def _ret():  return idx1, idx2
-
-   # x1 = where(ravel(x >= xpos1))[0]  ;  x1 = x1[0]
-   # x2 = where(ravel(x > xpos2))[0]  ;  x2 = x2[0] - 1
 
    idx1 = (np.abs(x - limits[0])).argmin()
    idx2 = (np.abs(x - limits[1])).argmin()
@@ -118,15 +116,21 @@ def pyn_column(spec_in,integration_limits = None):
     fval=spec['fval'].copy()
 
     # Deal with the continuum:
-    try:
-        continuum=spec['ycon'].copy()
-    except:
-        continuum=spec['cont'].copy()
+    if "contin" in spec.keys():
+        continuum=spec['contin'].copy()
+    else:
+        try:
+            continuum=spec['cont'].copy()
+        except:
+            continuum=spec['ycon'].copy()
 
-    try:
-        continuum_err = spec['ycon_sig'].copy()
-    except:
-        continuum_err = spec['econt'].copy()
+    if "contin_err" in spec.keys():
+        continuum_err = spec['contin_err'].copy()
+    else:
+        try:
+            continuum_err = spec['econt'].copy()
+        except:
+            continuum_err = spec['ycon_sig'].copy()
 
 
     # Define the limits of the integration:
@@ -165,7 +169,10 @@ def pyn_column(spec_in,integration_limits = None):
     # TODO: Include an AOD array in output w/continuum errors.
     # Create an apparent column density array
     nav_array = tau_array/(wavc*fval*column_factor)
-    nav_err = tau_array_err/(wavc*fval*column_factor)
+    nav_err_stat = tau_array_err/(wavc*fval*column_factor)
+    nav_err_cont = (continuum_err/continuum)/(wavc*fval*column_factor)
+    nav_err_tot = np.sqrt(nav_err_stat**2 + nav_err_cont**2)
+
 
     # Integrate the apparent column density profiles
     column = tau_int/(wavc*fval*column_factor)
@@ -192,14 +199,26 @@ def pyn_column(spec_in,integration_limits = None):
 
     spec['v1'] = integration_limits[0]
     spec['v2'] = integration_limits[1]
-    spec['vaod1'] = integration_limits[0]
-    spec['vaod2'] = integration_limits[1]
-
     spec['ncol'] = np.log10(column)
     spec['ncol_err_lo'] = -column_err_total/column*np.log10(np.e)
     spec['ncol_err_hi'] = column_err_total/column*np.log10(np.e)
 
     spec['flag_sat'] = flag_sat
+
+    # Fill the Na(v) arrays
+    spec['Nav'] = nav_array
+    spec['Nav_err'] = nav_err_tot
+    spec['Nav_sat'] = idx_saturation
+
+    if 'efnorm' in spec.keys():
+        spec['fnorm_err'] = spec['efnorm']
+        spec['fnorm_err_contin'] = spec['efnorm']*0.
+        spec['fnorm_err_stat'] = spec['efnorm']
+
+        del spec['efnorm']
+        del spec['efnorm1']
+        del spec['efnorm2']
+
 
     try:
         del spec['ncole1']
@@ -231,16 +250,23 @@ def pyn_eqwidth(spec_in,integration_limits = None):
     wavc=spec['wavc'].copy()
     fval=spec['fval'].copy()
 
-    # Deal with the continuum:
-    try:
-        continuum=spec['ycon'].copy()
-    except:
-        continuum=spec['cont'].copy()
+    # Deal with the continuum
+    if "contin" in spec.keys():
+        continuum=spec['contin'].copy()
+    else:
+        try:
+            continuum=spec['cont'].copy()
+        except:
+            continuum=spec['ycon'].copy()
 
-    try:
-        continuum_err = spec['ycon_sig'].copy()
-    except:
-        continuum_err = spec['econt'].copy()
+    if "contin_err" in spec.keys():
+        continuum_err = spec['contin_err'].copy()
+    else:
+        try:
+            continuum_err = spec['econt'].copy()
+        except:
+            continuum_err = spec['ycon_sig'].copy()
+
 
     # Define the limits of the integration:
     if not integration_limits:
@@ -364,16 +390,23 @@ def pyn_istat(spec_in,integration_limits = None):
     wavc=spec['wavc'].copy()
     fval=spec['fval'].copy()
 
-    # Deal with the continuum:
-    try:
-        continuum=spec['ycon'].copy()
-    except:
-        continuum=spec['cont'].copy()
+    # Deal with the continuum
+    if "contin" in spec.keys():
+        continuum=spec['contin'].copy()
+    else:
+        try:
+            continuum=spec['cont'].copy()
+        except:
+            continuum=spec['ycon'].copy()
 
-    try:
-        continuum_err = spec['ycon_sig'].copy()
-    except:
-        continuum_err = spec['econt'].copy()
+    if "contin_err" in spec.keys():
+        continuum_err = spec['contin_err'].copy()
+    else:
+        try:
+            continuum_err = spec['econt'].copy()
+        except:
+            continuum_err = spec['ycon_sig'].copy()
+
 
     # Define the limits of the integration:
     if not integration_limits:
@@ -534,6 +567,15 @@ def pyn_batch(spec_in,integration_limits = None, verbose = True):
 
     dashes = '--------------------------------------------'
     if verbose:
+
+        try:
+            spec['ion'] = spec['ion'].decode('utf-8')
+            spec['wni'] = spec['wni'].decode('utf-8')
+        except:
+            pass
+        finally:
+            print('********** '+spec['ion']+' '+spec['wni']+' **********')
+
         print('pyn_batch: Wavelength = {0:0.3f}'.format(spec['wavc']))
         print('pyn_batch: f-value = {0:0.3f}'.format(spec['fval']))
         print('\nVelocity range of integration: {0:0.1f} <= v <= {1:0.1f}'.format(spec['v1'],spec['v2']))
@@ -570,8 +612,8 @@ def pyn_batch(spec_in,integration_limits = None, verbose = True):
 
         print('\n')
         print('Linear COG N = {0:0.2f}'.format(spec['ncol_linearCoG']))
-        print('3sigma N     < {0:0.2f}'.format(spec['ncol_linear3sig']))
         print('2sigma N     < {0:0.2f}'.format(spec['ncol_linear2sig']))
+        print('3sigma N     < {0:0.2f}'.format(spec['ncol_linear3sig']))
         print(dashes)
 
     return spec
