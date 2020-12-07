@@ -210,6 +210,16 @@ def pyn_column(spec_in,integration_limits = None):
     spec['Nav_err'] = nav_err_tot
     spec['Nav_sat'] = idx_saturation
 
+    if 'efnorm' in spec.keys():
+        spec['fnorm_err'] = spec['efnorm']
+        spec['fnorm_err_contin'] = spec['efnorm']*0.
+        spec['fnorm_err_stat'] = spec['efnorm']
+
+        del spec['efnorm']
+        del spec['efnorm1']
+        del spec['efnorm2']
+
+
     try:
         del spec['ncole1']
         del spec['ncole2']
