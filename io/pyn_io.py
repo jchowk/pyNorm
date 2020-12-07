@@ -62,7 +62,11 @@ def read_inorm(input_filename):
     spec['fnorm_err'] = spec_in['efnorm']
     spec['fnorm_err_contin'] = spec_in['efnorm1']*0.
     spec['fnorm_err_stat'] = spec_in['efnorm2']*0.
-    # spec['sigma0
+    #
+    # Na(v) data
+    spec['Nav'] = np.zeros_like(spec_in['fnorm'])
+    spec['Nav_err'] = np.zeros_like(spec_in['fnorm'])
+    spec['Nav_sat'] = np.repeat(False,np.size(spec['Nav']))
     #
     # Na(v) quantities
     spec['SNR'] = spec_in['sn']

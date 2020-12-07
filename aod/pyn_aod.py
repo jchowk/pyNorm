@@ -169,7 +169,10 @@ def pyn_column(spec_in,integration_limits = None):
     # TODO: Include an AOD array in output w/continuum errors.
     # Create an apparent column density array
     nav_array = tau_array/(wavc*fval*column_factor)
-    nav_err = tau_array_err/(wavc*fval*column_factor)
+    nav_err_stat = tau_array_err/(wavc*fval*column_factor)
+    nav_err_cont = (continuum_err/continuum)/(wavc*fval*column_factor)
+    nav_err_tot = np.sqrt(nav_err_stat**2 + nav_err_cont**2)
+
 
     # Integrate the apparent column density profiles
     column = tau_int/(wavc*fval*column_factor)
@@ -196,14 +199,16 @@ def pyn_column(spec_in,integration_limits = None):
 
     spec['v1'] = integration_limits[0]
     spec['v2'] = integration_limits[1]
-    spec['vaod1'] = integration_limits[0]
-    spec['vaod2'] = integration_limits[1]
-
     spec['ncol'] = np.log10(column)
     spec['ncol_err_lo'] = -column_err_total/column*np.log10(np.e)
     spec['ncol_err_hi'] = column_err_total/column*np.log10(np.e)
 
     spec['flag_sat'] = flag_sat
+
+    # Fill the Na(v) arrays
+    spec['Nav'] = nav_array
+    spec['Nav_err'] = nav_err_tot
+    spec['Nav_sat'] = idx_saturation
 
     try:
         del spec['ncole1']
