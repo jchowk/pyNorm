@@ -18,9 +18,6 @@ def xlimit(x, limits):
 
    def _ret():  return idx1, idx2
 
-   # x1 = where(ravel(x >= xpos1))[0]  ;  x1 = x1[0]
-   # x2 = where(ravel(x > xpos2))[0]  ;  x2 = x2[0] - 1
-
    idx1 = (np.abs(x - limits[0])).argmin()
    idx2 = (np.abs(x - limits[1])).argmin()
 
