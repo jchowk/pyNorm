@@ -1,7 +1,0 @@
-pyenv shell miniconda2-latest
-
-## Convert IDL code to Python:
-cd pro/
-
-./fix_man_calls.csh
-./run_i2py.csh > i2py_log.txt
