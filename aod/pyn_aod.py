@@ -574,6 +574,7 @@ def pyn_batch(spec_in,integration_limits = None, verbose = True):
         except:
             pass
         finally:
+            # TODO: FIX ME TO LOOK FOR MISSING WNI
             print('********** '+spec['ion']+' '+spec['wni']+' **********')
 
         print('pyn_batch: Wavelength = {0:0.3f}'.format(spec['wavc']))
