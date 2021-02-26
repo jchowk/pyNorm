@@ -197,11 +197,18 @@ def pyn_column(spec_in,integration_limits = None):
     column_err_total = np.sqrt(column_err**2 \
         +column_err_cont**2)
 
+    log_n_err_lo = np.log10(column-column_err_total) - np.log10(column)
+    log_n_err_hi = np.log10(column+column_err_total) - np.log10(column)
+
     spec['v1'] = integration_limits[0]
     spec['v2'] = integration_limits[1]
     spec['ncol'] = np.log10(column)
-    spec['ncol_err_lo'] = -column_err_total/column*np.log10(np.e)
-    spec['ncol_err_hi'] = column_err_total/column*np.log10(np.e)
+    # Symmetrical errors:
+    # spec['ncol_err_lo'] = -column_err_total/column*np.log10(np.e)
+    # spec['ncol_err_hi'] = column_err_total/column*np.log10(np.e)
+    # Asymmetrical errors:
+    spec['ncol_err_lo'] = log_n_err_lo
+    spec['ncol_err_hi'] = log_n_err_hi
 
     spec['flag_sat'] = flag_sat
 
