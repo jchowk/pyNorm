@@ -143,7 +143,12 @@ def read_inorm(input_filename):
     spec['v90a'] = spec_in['v90a']
     spec['v90b'] = spec_in['v90b']
 
-    # spec = pyn_batch(spec,verbose=False)
+    # Create an integration limit if not already available
+    if spec['v1'] == spec['v2']:
+        spec['v1'] = -100.
+        spec['v2'] = +100.
+
+    spec = pyn_batch(spec,verbose=False)
 
     return spec
 
