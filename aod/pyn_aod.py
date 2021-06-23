@@ -51,8 +51,14 @@ def integrate_column(velocity, flux, flux_err,
     delv = np.concatenate((delv,[delv[-1]]))
 
     # Test for clearly saturated pixels:
-    idx_saturation = (flux <= 0.)
-    if idx_saturation.sum() > 0: flag_sat = True
+    #   -- If the idx_saturation is already filled, use the results:
+    try:
+        idx_saturation = ((flux <= 0.) | (idx_saturation == True))
+    except:
+        idx_saturation = (flux <= 0.)
+
+    if idx_saturation[idx].sum() > 0:
+        flag_sat = True
 
     # Fix saturation if it's present.
     flux[idx_saturation] = np.abs(flux[idx_saturation])
