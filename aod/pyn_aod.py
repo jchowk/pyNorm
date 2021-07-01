@@ -51,8 +51,14 @@ def integrate_column(velocity, flux, flux_err,
     delv = np.concatenate((delv,[delv[-1]]))
 
     # Test for clearly saturated pixels:
-    idx_saturation = (flux <= 0.)
-    if idx_saturation.sum() > 0: flag_sat = True
+    #   -- If the idx_saturation is already filled, use the results:
+    try:
+        idx_saturation = ((flux <= 0.) | (idx_saturation == True))
+    except:
+        idx_saturation = (flux <= 0.)
+
+    if idx_saturation[idx].sum() > 0:
+        flag_sat = True
 
     # Fix saturation if it's present.
     flux[idx_saturation] = np.abs(flux[idx_saturation])
@@ -197,11 +203,18 @@ def pyn_column(spec_in,integration_limits = None):
     column_err_total = np.sqrt(column_err**2 \
         +column_err_cont**2)
 
+    log_n_err_lo = np.log10(column-column_err_total) - np.log10(column)
+    log_n_err_hi = np.log10(column+column_err_total) - np.log10(column)
+
     spec['v1'] = integration_limits[0]
     spec['v2'] = integration_limits[1]
     spec['ncol'] = np.log10(column)
-    spec['ncol_err_lo'] = -column_err_total/column*np.log10(np.e)
-    spec['ncol_err_hi'] = column_err_total/column*np.log10(np.e)
+    # Symmetrical errors:
+    # spec['ncol_err_lo'] = -column_err_total/column*np.log10(np.e)
+    # spec['ncol_err_hi'] = column_err_total/column*np.log10(np.e)
+    # Asymmetrical errors:
+    spec['ncol_err_lo'] = log_n_err_lo
+    spec['ncol_err_hi'] = log_n_err_hi
 
     spec['flag_sat'] = flag_sat
 
@@ -574,6 +587,7 @@ def pyn_batch(spec_in,integration_limits = None, verbose = True):
         except:
             pass
         finally:
+            # TODO: FIX ME TO LOOK FOR MISSING WNI
             print('********** '+spec['ion']+' '+spec['wni']+' **********')
 
         print('pyn_batch: Wavelength = {0:0.3f}'.format(spec['wavc']))
