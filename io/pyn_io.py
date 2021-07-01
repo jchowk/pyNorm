@@ -19,25 +19,48 @@ def read_inorm(input_filename):
     # Observation information
     try:
         spec['ion'] = spec_in['ion'].decode('utf-8')
-        spec['wni'] = spec_in['wni'].decode('utf-8')
     except:
         spec['ion'] = spec_in['ion']
-        spec['wni'] = spec_in['wni']
+
+    try:
+        spec['wni'] = spec_in['wni'].decode('utf-8')
+    except:
+        spec['wni'] = '{0:0.1f}'.format(spec_in['wavc'])
+
     spec['wavc'] = spec_in['wavc']
     spec['fval'] = spec_in['fval']
     spec['gamma'] = spec_in['gam']
     spec['redshift'] = spec_in['redshift']
+
+    # Sometimes targname key is missing:
     try:
-        spec['targname'] = spec_in['targname'].decode('utf-8')
+        spec['targname'] = spec_in['targname']
+    except:
+        spec['targname'] = spec_in['object']
+
+    # Fix binary format
+    try:
         spec['object'] = spec_in['object'].decode('utf-8')
     except:
-        spec['targname'] = spec_in['targname']
         spec['object'] = spec_in['object']
-    spec['vlsr'] = spec_in['vlsr']
+
+    try:
+        spec['targname'] = spec['targname'].decode('utf-8')
+    except:
+        spec['targname'] = spec['targname']
+
+    # Coordinates
     spec['RA'] = spec_in['ra']
     spec['Dec'] = spec_in['dec']
     spec['gl'] = spec_in['gl']
     spec['gb'] = spec_in['gb']
+
+    # Sometimes LSR shift is missing
+    try:
+        spec['vlsr'] = spec_in['vlsr']
+    except:
+        spec['vlsr'] = lsrvel(spec['gl'],spec['gb'])
+
     #
     # Raw data
     spec['vel'] = spec_in['vel']
@@ -46,9 +69,18 @@ def read_inorm(input_filename):
     spec['wave'] = spec['wavc']*(spec['vel']/2.998e5)+spec['wavc']
     #
     # Continuum definition
-    spec['contin'] = spec_in['ycon']
-    spec['contin_err'] = spec_in['ycon_sig']
-    spec['contin_order'] = spec_in['maxord']
+    try:
+        spec['contin'] = spec_in['ycon']
+        spec['contin_err'] = spec_in['ycon_sig']
+    except:
+        spec['contin'] = spec_in['cont']
+        spec['contin_err'] = spec_in['econt']
+
+    try:
+        spec['contin_order'] = spec_in['maxord']
+    except:
+        spec['contin_order'] = 0
+
     spec['contin_coeff'] = np.array([0,0.])
     #
     # Construct continuum masks / velocity range
@@ -69,7 +101,11 @@ def read_inorm(input_filename):
     spec['Nav_sat'] = np.repeat(False,np.size(spec['Nav']))
     #
     # Na(v) quantities
-    spec['SNR'] = spec_in['sn']
+    try:
+        spec['SNR'] = spec_in['sn']
+    except:
+        spec['SNR'] = spec_in['snr']
+
     spec['v1'] = spec_in['v1']
     spec['v2'] = spec_in['v2']
     spec['EW'] = spec_in['w']
@@ -107,7 +143,12 @@ def read_inorm(input_filename):
     spec['v90a'] = spec_in['v90a']
     spec['v90b'] = spec_in['v90b']
 
-    # spec = pyn_batch(spec,verbose=False)
+    # Create an integration limit if not already available
+    if spec['v1'] == spec['v2']:
+        spec['v1'] = -100.
+        spec['v2'] = +100.
+
+    spec = pyn_batch(spec,verbose=False)
 
     return spec
 
@@ -168,3 +209,71 @@ def __convert_inorm_mask(spec_in):
         pass
 
     return spec
+
+
+def lsrvel(long, lat, radec=False, mihalas=False, silent=True):
+    """delta_v = lsrvel(long, lat, mihalas=False, SILENT=False):
+
+       This program calculates the projection of the velocity vector of the local standard of
+       rest on the sightline specified by (l,b)=(long,lat) used to calculate the shift from
+       heliocentric to LSR velocities: v(LSR) = v(helio) + LSR
+
+          Assumes v(LSR) = 20   km/sec to (l,b)=(56, 22) or
+                  v(LSR) = 16.5 km/sec to (l,b)=(53, 25)
+                                  from Mihalas & Binney
+
+          Created by JCH 9/27/99
+
+    :param long: Longitude [Galactic unless radec=True]
+    :param lat: Latitude [Galactic unless radec=True]
+    :param radec: input coordinates are RA/Dec? [default: False]
+    :param mihalas: use the Mihalas & Binney definition of LSR [default: False]
+    :param SILENT: suppress printing (default: False)
+    :return: LSR shift, where v(LSR) = v(helio) + LSR
+    """
+
+    import numpy as np
+    from astropy.coordinates import SkyCoord
+
+    # Radio definition coordinates
+    llsr = 56.
+    blsr = 22.
+    lsr_coords = SkyCoord(llsr, blsr, frame='galactic', unit='deg')
+    # Radio definition velocity
+    vlsr = 20.0
+
+    # M&B coordinates
+    lmb = 53.
+    bmb = 25.
+    mb_coords = SkyCoord(lmb, bmb, frame='galactic', unit='deg')
+    # M&B velocity
+    vmb = 16.5
+
+    if radec == False:
+        input_coords = SkyCoord(long, lat, frame='galactic', unit='deg')
+    else:
+        input_coords = SkyCoord(long, lat, frame='icrs', unit='deg')
+
+    # Calculate the separations on the sky [given in degrees]:
+    dlsr = input_coords.separation(lsr_coords)
+    dmb = input_coords.separation(mb_coords)
+
+    # Calculate the projected velocities:
+    vlsr_out = vlsr * np.cos(dlsr)
+    vmb_out = vmb * np.cos(dmb)
+
+    if silent == False:
+        ## Print output...
+        print("\n LSR Correction: ")
+        print("     LSR     = {0:0.2f} km/s".format(vlsr_out))
+        print("     LSR(MB) = {0:0.2f} km/s.".format(vmb_out))
+        print("\n v(LSR) = v(helio) + LSR \n")
+
+    def _ret():
+        if mihalas == True:
+            deltav_out = vmb_out
+        else:
+            deltav_out = vlsr_out
+        return deltav_out
+
+    return _ret()
