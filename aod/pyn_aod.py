@@ -57,12 +57,13 @@ def integrate_column(velocity, flux, flux_err,
     except:
         idx_saturation = (flux <= 0.)
 
-    if idx_saturation[idx].sum() > 0:
-        flag_sat = True
-
     # Fix saturation if it's present.
     flux[idx_saturation] = np.abs(flux[idx_saturation])
     flux[(flux==0)] = 2.*flux_err[(flux==0)]
+
+    # Set overall saturation flag for saturation in the integration range
+    if (idx_saturation*idx).sum() > 0:
+        flag_sat = True
 
     # Create an optical depth array and its error
     tau_array = np.log(continuum / flux)
