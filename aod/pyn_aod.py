@@ -603,7 +603,8 @@ def pyn_batch(spec_in,integration_limits = None, verbose = True):
         if spec['flag_sat']:
             print('***** WARNING: SATURATION IS PRESENT! *****')
             print(dashes)
-            print('log N > {0:0.3f}'.format(spec['ncol']))
+            print('log N > {0:0.3f} ({1:+0.3f}, {2:+0.3f})'.format(\
+                    spec['ncol'],spec['ncol_err_lo'],spec['ncol_err_hi']))
             print(dashes)
         else:
             print('log N = {0:0.3f} ({1:+0.3f}, {2:+0.3f})'.format(\
