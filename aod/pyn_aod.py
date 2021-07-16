@@ -159,7 +159,10 @@ def pyn_column(spec_in,integration_limits = None):
 
     # Test for clearly saturated pixels:
     idx_saturation = (flux <= 0.)
-    if idx_saturation.sum() > 0: flag_sat = True
+
+    # Set overall saturation flag for saturation in the integration range
+    if (idx_saturation*idx).sum() > 0:
+        flag_sat = True
 
     # Fix saturation if it's present.
     flux[idx_saturation] = np.abs(flux[idx_saturation])
