@@ -57,12 +57,13 @@ def integrate_column(velocity, flux, flux_err,
     except:
         idx_saturation = (flux <= 0.)
 
-    if idx_saturation[idx].sum() > 0:
-        flag_sat = True
-
     # Fix saturation if it's present.
     flux[idx_saturation] = np.abs(flux[idx_saturation])
     flux[(flux==0)] = 2.*flux_err[(flux==0)]
+
+    # Set overall saturation flag for saturation in the integration range
+    if (idx_saturation*idx).sum() > 0:
+        flag_sat = True
 
     # Create an optical depth array and its error
     tau_array = np.log(continuum / flux)
@@ -158,7 +159,10 @@ def pyn_column(spec_in,integration_limits = None):
 
     # Test for clearly saturated pixels:
     idx_saturation = (flux <= 0.)
-    if idx_saturation.sum() > 0: flag_sat = True
+
+    # Set overall saturation flag for saturation in the integration range
+    if (idx_saturation*idx).sum() > 0:
+        flag_sat = True
 
     # Fix saturation if it's present.
     flux[idx_saturation] = np.abs(flux[idx_saturation])
@@ -599,7 +603,8 @@ def pyn_batch(spec_in,integration_limits = None, verbose = True):
         if spec['flag_sat']:
             print('***** WARNING: SATURATION IS PRESENT! *****')
             print(dashes)
-            print('log N > {0:0.3f}'.format(spec['ncol']))
+            print('log N > {0:0.3f} ({1:+0.3f}, {2:+0.3f})'.format(\
+                    spec['ncol'],spec['ncol_err_lo'],spec['ncol_err_hi']))
             print(dashes)
         else:
             print('log N = {0:0.3f} ({1:+0.3f}, {2:+0.3f})'.format(\
