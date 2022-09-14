@@ -14,14 +14,35 @@ def fix_unwriteable_spec(spec):
 
     return spec
 
+# TODO: partial pixels?
+def integration_weights(x,limits):
+    # Calculate the weighting for each pixel in the column density integration.
+    #  Includes partial pixel weighting for edge effects.
+
+
+    # Pixel spacing
+    delx = np.median(np.roll(x,-1)-x)
+
+    # To be consistent with iNorm, we use x>=xmin, x<xmax
+    idx = ((x >= limits[0]) & (x < limits[1]))
+    integration_weights = idx*1.0
+
+    return weights
+
+
 def xlimit(x, limits):
+    # Determine the integration limits for integer pixel integrations.
 
-   def _ret():  return idx1, idx2
+    def _ret():  return idx1, idx2
 
-   idx1 = (np.abs(x - limits[0])).argmin()
-   idx2 = (np.abs(x - limits[1])).argmin()
+    # idx1 = (np.abs(x - limits[0])).argmin()
+    # idx2 = (np.abs(x - limits[1])).argmin()
 
-   return _ret()
+    # To be consistent with iNorm, we use x>=xmin, x<xmax
+    idx1 = np.asarray(x >= limits[0]).nonzero()[0][0]
+    idx2 = np.asarray(x > limits[1]).nonzero()[0][0]-1
+
+    return _ret()
 
 def integrate_column(velocity, flux, flux_err,
                 continuum, continuum_err, wavc, fval,
