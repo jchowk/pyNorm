@@ -14,18 +14,36 @@ def fix_unwriteable_spec(spec):
 
     return spec
 
-# TODO: partial pixels?
 def integration_weights(x,limits):
     # Calculate the weighting for each pixel in the column density integration.
     #  Includes partial pixel weighting for edge effects.
 
+    # Pixel number array
+    pix_num_array = np.arange(len(x))
 
     # Pixel spacing
     delx = np.median(np.roll(x,-1)-x)
 
-    # To be consistent with iNorm, we use x>=xmin, x<xmax
-    idx = ((x >= limits[0]) & (x < limits[1]))
-    integration_weights = idx*1.0
+    # Find the pixels that are fully within our integration range.
+    idx = ((x-delx/2 >= limits[0]) & (x+delx/2 < limits[1]))
+    weights = idx*1.0
+
+    # Limits of complete pixels in indices.
+    pix_limits = [np.min(pix_num_array[idx]),
+                    np.max(pix_num_array[idx])]
+
+    # Calculate fractions of edge pixels in the integration:
+    # Identify edge pixels
+    lo_pix = pix_limits[0]-1
+    hi_pix = pix_limits[1]+1
+
+    # Fraction of edge pixels contained within integration ranges
+    lo_frac = ((x[lo_pix]+delx/2)-limits[0])/(delx)
+    hi_frac = (limits[1]-(x[hi_pix]-delx/2))/(delx)
+
+    # Assign fractional weights to the edge pixels
+    weights[lo_pix] = lo_frac
+    weights[hi_pix] = hi_frac
 
     return weights
 
@@ -46,26 +64,22 @@ def xlimit(x, limits):
 
 def integrate_column(velocity, flux, flux_err,
                 continuum, continuum_err, wavc, fval,
-                integration_limits = [-100,100]):
+                integration_limits = [-100,100],
+                partial_pixels = True):
     # TODO: Asymmetrical error bars?
 
     # Some constants and flags
     column_factor = 2.654e-15
     flag_sat = False
 
-    # TODO: Adjust integration limits to reflect whole pixels used.
     # Define the limits of the integration:
-    if not integration_limits:
-        integration_limits = [spec['v1'],spec['v2']]
-        idx = np.full(np.size(velocity),False)
-        xlim1, xlim2 = \
-            xlimit(velocity,[spec['v1'],spec['v2']])
-        idx[xlim1:xlim2] = True
-    else:
-        idx = np.full(np.size(velocity),False)
-        xlim1, xlim2 = \
-            xlimit(velocity,integration_limits)
-        idx[xlim1:xlim2] = True
+    idx = np.full(np.size(velocity),False)
+    xlim1, xlim2 = \
+        xlimit(velocity,integration_limits)
+    idx[xlim1:xlim2+1] = True
+
+    # Work out partial pixel weighting
+    weights = integration_weights(velocity,integration_limits)
 
     # An array of delta v:
     delv = velocity[1:]-velocity[:-1]
@@ -90,9 +104,15 @@ def integrate_column(velocity, flux, flux_err,
     tau_array = np.log(continuum / flux)
     tau_array_err = np.sqrt((flux_err/flux)**2)
 
-    tau_int = np.sum(tau_array[idx]*delv[idx])
-    tau_int_err = \
-     np.sqrt(np.sum((tau_array_err[idx]*delv[idx])**2))
+    # Integrate the apparent optical depth
+    if partial_pixels:
+        tau_int = np.sum(tau_array*delv*weights)
+        tau_int_err = \
+         np.sqrt(np.sum((tau_array_err*delv*weights)**2))
+    else:
+        tau_int = np.sum(tau_array[idx]*delv[idx])
+        tau_int_err = \
+         np.sqrt(np.sum((tau_array_err[idx]*delv[idx])**2))
 
     # Create an apparent column density array
     nav_array = tau_array/(wavc*fval*column_factor)
@@ -105,11 +125,17 @@ def integrate_column(velocity, flux, flux_err,
     column_err = tau_int_err/(wavc*fval*column_factor)
 
     # Continuum error: errors are correlated, so don't add in quadrature.
-    column_err_cont = \
-        np.sum(((continuum_err[idx]/continuum[idx])*delv[idx])) /\
-         (wavc*fval*column_factor)
+    if partial_pixels:
+        column_err_cont = \
+            np.sum(((continuum_err/continuum)*delv*weights)) /\
+             (wavc*fval*column_factor)
+    else:
+        column_err_cont = \
+            np.sum(((continuum_err[idx]/continuum[idx])*delv[idx])) /\
+             (wavc*fval*column_factor)
 
-    # Background uncertainty
+
+    # Background uncertainty -- Not applied
     z_eps = 0.01  # Fractional bg error
     yc1 = continuum[idx]*(1.-z_eps)
     y1  = flux[idx]-continuum[idx]*z_eps
@@ -124,7 +150,8 @@ def integrate_column(velocity, flux, flux_err,
     return column, column_err_total, flag_sat
 
 
-def pyn_column(spec_in,integration_limits = None):
+def pyn_column(spec_in, integration_limits = None,
+                partial_pixels = True):
 
     spec = spec_in.copy()
 
@@ -160,50 +187,54 @@ def pyn_column(spec_in,integration_limits = None):
         except:
             continuum_err = spec['ycon_sig'].copy()
 
-
     # Define the limits of the integration:
     if not integration_limits:
         integration_limits = [spec['v1'],spec['v2']]
-        idx = np.full(np.size(velocity),False)
-        xlim1, xlim2 = \
-            xlimit(velocity,[spec['v1'],spec['v2']])
-        idx[xlim1:xlim2] = True
-    else:
-        idx = np.full(np.size(velocity),False)
-        xlim1, xlim2 = \
-            xlimit(velocity,integration_limits)
-        idx[xlim1:xlim2] = True
+
+    idx = np.full(np.size(velocity),False)
+    xlim1, xlim2 = xlimit(velocity,integration_limits)
+    idx[xlim1:xlim2+1] = True
+
+    # Work out partial pixel weighting
+    weights = integration_weights(velocity,integration_limits)
 
     # An array of delta v:
     delv = velocity[1:]-velocity[:-1]
     delv = np.concatenate((delv,[delv[-1]]))
 
     # Test for clearly saturated pixels:
-    idx_saturation = (flux <= 0.)
-
-    # Set overall saturation flag for saturation in the integration range
-    if (idx_saturation*idx).sum() > 0:
-        flag_sat = True
+    #   -- If the idx_saturation is already filled, use the results:
+    try:
+        idx_saturation = ((flux <= 0.) | (idx_saturation == True))
+    except:
+        idx_saturation = (flux <= 0.)
 
     # Fix saturation if it's present.
     flux[idx_saturation] = np.abs(flux[idx_saturation])
     flux[(flux==0)] = 2.*flux_err[(flux==0)]
 
+    # Set overall saturation flag for saturation in the integration range
+    if (idx_saturation*idx).sum() > 0:
+        flag_sat = True
+
     # Create an optical depth array and its error
     tau_array = np.log(continuum / flux)
     tau_array_err = np.sqrt((flux_err/flux)**2)
 
-    tau_int = np.sum(tau_array[idx]*delv[idx])
-    tau_int_err = \
-     np.sqrt(np.sum((tau_array_err[idx]*delv[idx])**2))
-
     # TODO: Include an AOD array in output w/continuum errors.
+    # Integrate the apparent optical depth
+    if partial_pixels:
+        tau_int = np.sum(tau_array*delv*weights)
+        tau_int_err = \
+         np.sqrt(np.sum((tau_array_err*delv*weights)**2))
+    else:
+        tau_int = np.sum(tau_array[idx]*delv[idx])
+        tau_int_err = \
+         np.sqrt(np.sum((tau_array_err[idx]*delv[idx])**2))
+
     # Create an apparent column density array
     nav_array = tau_array/(wavc*fval*column_factor)
-    nav_err_stat = tau_array_err/(wavc*fval*column_factor)
-    nav_err_cont = (continuum_err/continuum)/(wavc*fval*column_factor)
-    nav_err_tot = np.sqrt(nav_err_stat**2 + nav_err_cont**2)
-
+    nav_err = tau_array_err/(wavc*fval*column_factor)
 
     # Integrate the apparent column density profiles
     column = tau_int/(wavc*fval*column_factor)
@@ -212,11 +243,16 @@ def pyn_column(spec_in,integration_limits = None):
     column_err = tau_int_err/(wavc*fval*column_factor)
 
     # Continuum error: errors are correlated, so don't add in quadrature.
-    column_err_cont = \
-        np.sum(((continuum_err[idx]/continuum[idx])*delv[idx])) /\
-         (wavc*fval*column_factor)
+    if partial_pixels:
+        column_err_cont = \
+            np.sum(((continuum_err/continuum)*delv*weights)) /\
+             (wavc*fval*column_factor)
+    else:
+        column_err_cont = \
+            np.sum(((continuum_err[idx]/continuum[idx])*delv[idx])) /\
+             (wavc*fval*column_factor)
 
-    # Background uncertainty
+    # Background uncertainty -- Not applied
     z_eps = 0.01  # Fractional bg error
     yc1 = continuum[idx]*(1.-z_eps)
     y1  = flux[idx]-continuum[idx]*z_eps
@@ -248,6 +284,9 @@ def pyn_column(spec_in,integration_limits = None):
     spec['Nav_err'] = nav_err_tot
     spec['Nav_sat'] = idx_saturation
 
+    # Add the weights of the pixel integrations
+    spec['integration_weights'] = weights
+
     if 'efnorm' in spec.keys():
         spec['fnorm_err'] = spec['efnorm']
         spec['fnorm_err_contin'] = spec['efnorm']*0.
@@ -268,7 +307,8 @@ def pyn_column(spec_in,integration_limits = None):
     return spec
 
 
-def pyn_eqwidth(spec_in,integration_limits = None):
+def pyn_eqwidth(spec_in,integration_limits = None,
+                partial_pixels = True):
 
     spec = spec_in.copy()
 
@@ -309,19 +349,13 @@ def pyn_eqwidth(spec_in,integration_limits = None):
     # Define the limits of the integration:
     if not integration_limits:
         integration_limits = [spec['v1'],spec['v2']]
-        idx = np.full(np.size(velocity),False)
-        xlim1, xlim2 = \
-            xlimit(velocity,[spec['v1'],spec['v2']])
-        idx[xlim1:xlim2] = True
-    else:
-        idx = np.full(np.size(velocity),False)
-        xlim1, xlim2 = \
-            xlimit(velocity,integration_limits)
-        idx[xlim1:xlim2] = True
 
-    # An array of delta v:
-    delv = velocity[1:]-velocity[:-1]
-    delv = np.concatenate((delv,[delv[-1]]))
+    idx = np.full(np.size(velocity),False)
+    xlim1, xlim2 = xlimit(velocity,integration_limits)
+    idx[xlim1:xlim2+1] = True
+
+    # Work out partial pixel weighting
+    weights = integration_weights(velocity,integration_limits)
 
     # Create the wavelength array
     try:
@@ -335,14 +369,25 @@ def pyn_eqwidth(spec_in,integration_limits = None):
     delw = np.concatenate((delw,[delw[-1]]))
 
     # Calculate the equivalent width
-    eqw_int = np.sum((1.-flux[idx]/continuum[idx])*delw[idx])
+    if partial_pixels:
+        eqw_int = np.sum((1.-flux/continuum)*delw*weights)
+        # Random flux errors
+        eqw_stat_err = \
+            np.sqrt(np.sum((flux_err/continuum*delw*weights)**2))
+        # Continuum errors
+        eqw_cont_err = \
+            np.sum(continuum_err*(flux/continuum**2)*delw*weights)
 
-    # Random flux errors
-    eqw_stat_err = \
-        np.sqrt(np.sum((flux_err[idx]/continuum[idx]*delw[idx])**2))
-    # Continuum errors
-    eqw_cont_err = \
-        np.sum(continuum_err[idx]*(flux[idx]/continuum[idx]**2)*delw[idx])
+    else:
+        eqw_int = np.sum((1.-flux[idx]/continuum[idx])*delw[idx])
+        # Random flux errors
+        eqw_stat_err = \
+            np.sqrt(np.sum((flux_err[idx]/continuum[idx]*delw[idx])**2))
+        # Continuum errors
+        eqw_cont_err = \
+            np.sum(continuum_err[idx]*(flux[idx]/continuum[idx]**2)*delw[idx])
+
+
     # Zero point error
     # TODO: Check this calculation
     z_eps = 0.01
@@ -380,6 +425,9 @@ def pyn_eqwidth(spec_in,integration_limits = None):
         np.round(np.log10(linear_ncol2sig),4)
     spec['ncol_linear3sig'] = \
         np.round(np.log10(linear_ncol3sig),4)
+
+    # Pixel weighting factors
+    spec['integration_weights'] = weights
 
     # Is the line detected at 2, 3 sigma?
     if spec['EW'] >= 2.*spec['EW_err']:
