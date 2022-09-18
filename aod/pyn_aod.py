@@ -507,16 +507,16 @@ def pyn_istat(spec_in,integration_limits = None,
 
     # M2
     # Calculate the second moment (width)
-    b = np.sum(tau*(velocity - m1)**2*delv*weights)
-    m2 = np.sqrt(b/tau_tot)
+    bsqared = np.sum(tau*(velocity-m1)**2*delv*weights)
+    m2 = np.sqrt(bsqared/tau_tot)
 
     # M2 error
-    dbdi = -1./flux*(velocity*weights - m1)**2 * delv*weights
-    dbdc = 1./ continuum*(velocity*weights - m1)**2 * delv*weights
-    dbdm1 = -2. * tau*(velocity*weights - m1) * delv*weights
+    dbdi = -1./flux*(velocity-m1)**2 * delv*weights
+    dbdc = 1./ continuum*(velocity-m1)**2 * delv*weights
+    dbdm1 = -2.*tau*(velocity-m1) * delv*weights
 
-    dm2di = (tau_tot * dbdi - b * dwdi) / tau_tot**2
-    dm2dc = (tau_tot * dbdc - b * dwdc) / tau_tot**2
+    dm2di = (tau_tot * dbdi - bsqared*dwdi) / tau_tot**2
+    dm2dc = (tau_tot * dbdc - bsqared*dwdc) / tau_tot**2
     dm2dm1 = dbdm1 / tau_tot
 
     q1 = np.sqrt(np.sum((flux_err*weights)**2 * dm2di**2))
@@ -524,7 +524,10 @@ def pyn_istat(spec_in,integration_limits = None,
     q3 = np.sqrt(np.sum(m1err**2 * dm2dm1**2))
 
     m2err = np.sqrt(q1**2 + q2**2 + q3**2)
-    m2err = m2err / (2. * m2)
+    m2err = m2err / (2.*m2)
+
+    bvalue = m2*np.sqrt(2.)
+    bvalue_err = m2err*np.sqrt(2.)
 
     # M3
     # Calculate the third moment (skewness)
@@ -583,8 +586,10 @@ def pyn_istat(spec_in,integration_limits = None,
     # Fill the spec output
     spec['va'] = m1
     spec['va_err'] = m1err
-    spec['ba'] = m2
-    spec['ba_err'] = m2err
+    # spec['ba'] = m2
+    # spec['ba_err'] = m2err
+    spec['ba'] = bvalue
+    spec['ba_err'] = bvalue_err
     spec['m3'] = m3
     spec['m3_err'] = m3err
 

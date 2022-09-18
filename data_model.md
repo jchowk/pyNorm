@@ -51,8 +51,8 @@
 * `flag_sat` - Flag denoting presence of obvious saturation [True/False]
 * `va` - Average velocity [first moment] [km/s]
 * `va_err` - Average velocity [first moment] error [km/s]
-* `ba` - Velocity width [second moment] b-value [km/s]
-* `ba_err` - Velocity width [second moment] b-value error [km/s]
+* `ba` - Velocity width [sqrt(2)*second moment] b-value [km/s]
+* `ba_err` - Velocity width [sqrt(2)*second moment] b-value error [km/s]
 * `m3` - Skewness [third moment]
 * `m3_err` - Skewness [third moment] error
 * `dv90` - $\Delta v_{90}$: 90% of EW [km/s]
