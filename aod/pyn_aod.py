@@ -151,6 +151,10 @@ def pyn_column(spec_in, integration_limits = None,
     if ~spec['vel'].flags.writeable:
         spec = fix_unwriteable_spec(spec)
 
+    # Make sure there are integration limits:
+    if integration_limits is None:
+        integration_limits = [spec['v1'],spec['v2']]
+
     # Some constants and flags
     column_factor = 2.654e-15
     flag_sat = False
@@ -297,6 +301,10 @@ def pyn_eqwidth(spec_in,integration_limits = None,
     if ~spec['vel'].flags.writeable:
         spec = fix_unwriteable_spec(spec)
 
+    # Make sure there are integration limits:
+    if integration_limits is None:
+        integration_limits = [spec['v1'],spec['v2']]
+
     # Some constants and flags
     column_factor = 2.654e-15
     ew_factor = 1.13e17
@@ -435,6 +443,10 @@ def pyn_istat(spec_in,integration_limits = None,
     # memory in some readsav inputs
     if ~spec['vel'].flags.writeable:
         spec = fix_unwriteable_spec(spec)
+
+    # Make sure there are integration limits:
+    if integration_limits is None:
+        integration_limits = [spec['v1'],spec['v2']]
 
     # Some constants and flags
     column_factor = 2.654e-15
@@ -620,6 +632,10 @@ def pyn_batch(spec_in,integration_limits = None,
     if ~spec['vel'].flags.writeable:
         spec = fix_unwriteable_spec(spec)
 
+
+    # Make sure there are integration limits:
+    if integration_limits is None:
+        integration_limits = [spec['v1'],spec['v2']]
 
     spec = pyn_column(spec,integration_limits, partial_pixels)
     spec = pyn_eqwidth(spec,integration_limits, partial_pixels)
