@@ -100,6 +100,11 @@ def integrate_column(velocity, flux, flux_err,
     tau_array = np.log(continuum / flux)
     tau_array_err = np.sqrt((flux_err/flux)**2)
 
+    # If optical depth NaN, set to zero.
+    bd = np.isnan(tau_array)
+    tau_array[bd] = 0.
+    tau_array_err[bd] = np.inf
+
     # Integrate the apparent optical depth
     tau_int = np.sum(tau_array*delv*weights)
     tau_int_err = \
@@ -127,12 +132,12 @@ def integrate_column(velocity, flux, flux_err,
 
 
     # Background uncertainty -- Not applied
-    z_eps = 0.01  # Fractional bg error
-    yc1 = continuum*weights*(1.-z_eps)
-    y1  = flux*weights-continuum*weights*z_eps
-    tau1 = np.sum(np.log(yc1/y1)*delv*weights)
-    col1 = tau1 / (wavc*fval*column_factor)
-    column_err_zero = np.abs(col1-column)
+    # z_eps = 0.01  # Fractional bg error
+    # yc1 = continuum*weights*(1.-z_eps)
+    # y1  = flux*weights-continuum*weights*z_eps
+    # tau1 = np.sum(np.log(yc1/y1)*delv*weights)
+    # col1 = tau1 / (wavc*fval*column_factor)
+    # column_err_zero = np.abs(col1-column)
 
     # Combine errors
     column_err_total = np.sqrt(column_err**2 \
@@ -213,6 +218,12 @@ def pyn_column(spec_in, integration_limits = None,
     tau_array = np.log(continuum / flux)
     tau_array_err = np.sqrt((flux_err/flux)**2)
 
+    # If optical depth NaN, set to zero.
+    # This happens when continuum < 0.
+    bd = np.isnan(tau_array)
+    tau_array[bd] = 0.
+    tau_array_err[bd] = 0.
+
     # TODO: Include an AOD array in output w/continuum errors.
     # Integrate the apparent optical depth
     tau_int = np.sum(tau_array*delv*weights)
@@ -237,12 +248,12 @@ def pyn_column(spec_in, integration_limits = None,
          (wavc*fval*column_factor)
 
     # Background uncertainty -- Not applied
-    z_eps = 0.01  # Fractional bg error
-    yc1 = continuum*weights*(1.-z_eps)
-    y1  = flux*weights-continuum*weights*z_eps
-    tau1 = np.sum(np.log(yc1/y1)*delv*weights)
-    col1 = tau1 / (wavc*fval*column_factor)
-    column_err_zero = np.abs(col1-column)
+    # z_eps = 0.01  # Fractional bg error
+    # yc1 = continuum*weights*(1.-z_eps)
+    # y1  = flux*weights-continuum*weights*z_eps
+    # tau1 = np.sum(np.log(yc1/y1)*delv*weights)
+    # col1 = tau1 / (wavc*fval*column_factor)
+    # column_err_zero = np.abs(col1-column)
 
     # Combine errors
     column_err_total = np.sqrt(column_err**2 \
@@ -618,8 +629,6 @@ def pyn_istat(spec_in,integration_limits = None,
         pass
 
     return spec
-
-
 
 def pyn_batch(spec_in,integration_limits = None,
                 partial_pixels = True,
