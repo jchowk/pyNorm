@@ -1,4 +1,4 @@
-def read_inorm(input_filename):
+def read_inorm(input_filename, partial_pixels=True):
     import numpy as np
     from collections import OrderedDict
     from scipy.io import readsav
@@ -148,7 +148,7 @@ def read_inorm(input_filename):
         spec['v1'] = -100.
         spec['v2'] = +100.
 
-    spec = pyn_batch(spec,verbose=False)
+    spec = pyn_batch(spec, verbose=False, partial_pixels=partial_pixels)
 
     return spec
 
