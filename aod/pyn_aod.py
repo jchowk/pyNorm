@@ -282,6 +282,19 @@ def pyn_column(spec_in, integration_limits = None,
     # Add the weights of the pixel integrations
     spec['integration_weights'] = weights
 
+    # ---> Do this in the EW code.
+    # Is the line detected at 2, 3 sigma?
+    # if column >= 2.*column_err_total:
+    #     spec['detection_2sig'] = True
+    # else:
+    #     spec['detection_2sig'] = False
+    #
+    # if column >= 3.*column_err_total:
+    #     spec['detection_3sig'] = True
+    # else:
+    #     spec['detection_3sig'] = False
+
+
     if 'efnorm' in spec.keys():
         spec['fnorm_err'] = spec['efnorm']
         spec['fnorm_err_contin'] = spec['efnorm']*0.
@@ -646,8 +659,8 @@ def pyn_batch(spec_in,integration_limits = None,
     if integration_limits is None:
         integration_limits = [spec['v1'],spec['v2']]
 
-    spec = pyn_column(spec,integration_limits, partial_pixels)
     spec = pyn_eqwidth(spec,integration_limits, partial_pixels)
+    spec = pyn_column(spec,integration_limits, partial_pixels)
     spec = pyn_istat(spec,integration_limits, partial_pixels)
 
     dashes = '--------------------------------------------'
@@ -663,7 +676,11 @@ def pyn_batch(spec_in,integration_limits = None,
             print('********** '+spec['ion']+' '+spec['wni']+' **********')
 
         print('pyn_batch: Wavelength = {0:0.3f}'.format(spec['wavc']))
-        print('pyn_batch: f-value = {0:0.3f}'.format(spec['fval']))
+        # if spec['fval'] <= 1.e-3:
+        #     print('pyn_batch: f-value = {0:0.2g}'.format(spec['fval']))
+        # else:
+        #     print('pyn_batch: f-value = {0:0.3f}'.format(spec['fval']))
+        print('pyn_batch: f-value = {0:0.3e}'.format(spec['fval']))
         print('\nVelocity range of integration: {0:0.1f} <= v <= {1:0.1f}'.format(spec['v1'],spec['v2']))
 
         print('\n'+dashes)
@@ -694,7 +711,7 @@ def pyn_batch(spec_in,integration_limits = None,
         print('Cont Error   = {0:0.2f}'.format(spec['EW_err_cont']))
         print('Tot Error    = {0:0.2f}'.format(spec['EW_err']))
         print('3sigma EW    < {0:0.2f}'.format(ew3sigma))
-        if spec['EW'] < ew3sigma:
+        if ~spec['detection_3sig']:
             print('***** WARNING: LINE NOT DETECTED AT 3 SIGMA! *****')
 
         print('\n')
