@@ -106,7 +106,6 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
     spec['mask_cont'] = np.zeros(len(spec_in['wc']))
     spec['mask_cont'][masked_area] = 0
     spec['mask_cont'][~masked_area] = 1
-    print(spec['mask_cont'])
     spec = __convert_inorm_mask(spec)
     #
     # Normalized spectrum
@@ -168,7 +167,6 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
     if spec['v1'] == spec['v2']:
         spec['v1'] = -100.
         spec['v2'] = +100.
-
     spec = pyn_batch(spec, verbose=False, partial_pixels=partial_pixels)
 
     return spec
