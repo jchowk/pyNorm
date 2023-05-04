@@ -1,3 +1,178 @@
+def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
+    import numpy as np
+    from collections import OrderedDict
+    from scipy.io import readsav
+    from pyNorm.aod import pyn_batch
+    import pickle
+    from astropy.coordinates import SkyCoord
+
+    # Read the saved pickle file:
+    spec_in = []
+    with (open(input_filename, "rb")) as openfile:
+        while True:
+            try:
+                spec_in.append(pickle.load(openfile))
+            except EOFError:
+                break
+    #adjust to the level of the specified ion in the pickle file
+    spec_in = spec_in[0][ion]
+
+    # FIX NON-WRITEABLE ARRAYS due to discontiguous
+    # memory in some readsav inputs
+    if ~spec_in['vel'].flags.writeable:
+        spec_in = __fix_unwriteable_spec(spec_in)
+
+
+    # Create the dictionary
+    spec = OrderedDict()
+
+    # Observation information
+    try:
+        spec['ion'] = spec_in['name'].decode('utf-8')
+    except:
+        spec['ion'] = spec_in['name']
+
+
+    spec['wni'] = spec_in['name'].split( )[-1]  #should be iNorm wavelength label
+
+    spec['wavc'] = spec_in['lam_0']
+    spec['fval'] = spec_in['f']
+    spec['gamma'] = spec_in['gamma']
+    spec['redshift'] = spec_in['z']
+
+    #this whole section through the vlsr is not adjusted for rbcodes yet
+    #don't have the info in the pickle file right now
+    # Sometimes targname key is missing:
+    try:
+        spec['targname'] = targname#spec_in['targname']
+    except:
+        spec['targname'] = 'NoTargName'#spec_in['object']
+
+    # Fix binary format
+    try:
+        spec['object'] = spec_in['object'].decode('utf-8')
+    except:
+        spec['object'] = 'NoTargName'#spec_in['object']
+
+    try:
+        spec['targname'] = spec['targname'].decode('utf-8')
+    except:
+        spec['targname'] = spec['targname']
+
+    # Coordinates
+    spec['RA'] =ra
+    spec['Dec'] =dec
+    coords  = SkyCoord(ra, dec, unit="deg",frame = 'icrs')
+    #fill in the lat and long
+    spec['gl'] = coords.galactic.l.value
+    spec['gb'] = coords.galactic.b.value
+
+    # Sometimes LSR shift is missing
+    try:
+        spec['vlsr'] = lsrvel(spec['gl'],spec['gb'])
+    except:
+        spec['vlsr'] = float("nan")
+
+
+    #
+    # Raw data
+    spec['vel'] = spec_in['vel']
+    spec['flux'] = spec_in['flux']
+    spec['eflux'] = spec_in['error']
+    spec['wave'] = spec['wavc']*(spec['vel']/2.998e5)+spec['wavc']
+    #
+    # Continuum definition
+    try:
+        spec['contin'] = spec_in['cont']
+        spec['contin_err'] = np.zeros(len(spec_in['cont']))
+    except:
+        spec['contin'] = spec_in['ycon']
+        spec['contin_err'] = spec_in['ycon_sig']
+
+    try:
+        spec['contin_order'] = spec_in['order']
+    except:
+        spec['contin_order'] = 0
+
+    spec['contin_coeff'] = np.array([0,0.])
+    #
+    # Construct continuum masks / velocity range
+    #rb_codes saves the mask as a boolean array, need to convert to 0s and 1s before using the
+    #__convert_inorm_mask function
+    masked_area = (spec_in['wc'] == False) #these are the areas masked from rb_codes
+    spec['contin_mask_bits'] = np.zeros(len(spec_in['wc'])) #True = included
+    spec['contin_mask_bits'][masked_area] = 0
+    spec['contin_mask_bits'][~masked_area] = 1
+    spec['mask_cont'] = np.zeros(len(spec_in['wc']))
+    spec['mask_cont'][masked_area] = 0
+    spec['mask_cont'][~masked_area] = 1
+    print(spec['mask_cont'])
+    spec = __convert_inorm_mask(spec)
+    #
+    # Normalized spectrum
+    spec['vnorm'] = spec_in['vel']
+    spec['fnorm'] = spec_in['flux']/spec_in['cont']
+    spec['fnorm_err'] = 0.0
+    spec['fnorm_err_contin'] = 0.
+    spec['fnorm_err_stat'] = 0.
+    #
+    # Na(v) data
+    spec['Nav'] = float('nan')
+    spec['Nav_err'] = float('nan')
+    spec['Nav_sat'] = float('nan')
+    #
+    # Na(v) quantities
+    try:
+        spec['SNR'] = 0.0
+    except:
+        spec['SNR'] = 0.0
+
+    spec['v1'] = spec_in['EWlims'][0]
+    spec['v2'] = spec_in['EWlims'][1]
+    spec['EW'] = spec_in['EW']
+    spec['EW_err'] = spec_in['EWsig']
+    spec['EW_err_stat'] = 0.0
+    spec['EW_err_cont'] = 0.0
+    spec['EW_err_zero'] = 0.0
+    spec['ncol_linearCoG'] = 1.13e17*spec['EW']/(spec['fval']*spec['wavc']**2)
+    spec['ncol_linear2sig'] = 0.0
+    spec['ncol_linear3sig'] = 0.0
+    spec['EW_cumulative'] = np.zeros_like(spec['vel'])
+
+    # Detection flags
+    if spec['EW'] >= 2*spec['EW_err']:
+        spec['detection_2sig'] = True
+    else:
+        spec['detection_2sig'] = False
+    if spec['EW'] >= 3*spec['EW_err']:
+        spec['detection_3sig'] = True
+    else:
+        spec['detection_3sig'] = False
+
+    spec['ncol'] = spec_in['N']
+    spec['ncol_err_lo'] = spec_in['Nsig']
+    spec['ncol_err_hi'] = spec_in['Nsig']
+    spec['flag_sat'] = False
+    #
+    spec['va'] = 0.0#spec_in['va'] #average velocity
+    spec['va_err'] = 0.0#spec_in['vaerr']
+    spec['ba'] = 0.0#spec_in['ba'] #velocity width (b value)
+    spec['ba_err'] = 0.0#spec_in['baerr']
+    spec['m3'] = 0.0#spec_in['m3'] #skewness
+    spec['m3_err'] = 0.0#spec_in['m3err']
+    spec['dv90'] = 0.0#spec_in['dv90']
+    spec['v90a'] = 0.0#spec_in['v90a']
+    spec['v90b'] = 0.0#spec_in['v90b']
+
+    # Create an integration limit if not already available
+    if spec['v1'] == spec['v2']:
+        spec['v1'] = -100.
+        spec['v2'] = +100.
+
+    spec = pyn_batch(spec, verbose=False, partial_pixels=partial_pixels)
+
+    return spec
+
 def read_inorm(input_filename, partial_pixels=True):
     import numpy as np
     from collections import OrderedDict
