@@ -10,4 +10,4 @@ nl_cgm_idl/
 nl_aod/
 nl_inorm/
 dist/
-build/
+docs/Testing/*
