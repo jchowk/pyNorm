@@ -111,7 +111,7 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
     # Normalized spectrum
     spec['vnorm'] = spec_in['vel']
     spec['fnorm'] = spec_in['flux']/spec_in['cont']
-    spec['fnorm_err'] = 0.0
+    spec['fnorm_err'] = spec_in['error']/spec_in['cont']
     spec['fnorm_err_contin'] = 0.
     spec['fnorm_err_stat'] = 0.
     #
