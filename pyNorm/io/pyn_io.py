@@ -3,6 +3,7 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
     from collections import OrderedDict
     from scipy.io import readsav
     from pyNorm.aod import pyn_batch
+    from pyNorm.continuum import continuum_fit
     import pickle
     from astropy.coordinates import SkyCoord
 
@@ -140,6 +141,7 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
 
     # Detection flags
     if spec['EW'] >= 2*spec['EW_err']:
+        print(spec['EW'],spec['EW_err'],type(spec['EW_err']))
         spec['detection_2sig'] = True
     else:
         spec['detection_2sig'] = False
@@ -167,6 +169,9 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
     if spec['v1'] == spec['v2']:
         spec['v1'] = -100.
         spec['v2'] = +100.
+    print(spec['contin_order'])
+    spec = continuum_fit(spec,minord=spec['contin_order']-1,maxord=spec['contin_order']+1)
+    print(spec['contin_order'])
     spec = pyn_batch(spec, verbose=False, partial_pixels=partial_pixels)
 
     return spec
