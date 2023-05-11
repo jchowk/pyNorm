@@ -1,3 +1,15 @@
+def save_pyn_results(spec,filename = 'None'):
+    import pickle
+    '''
+    Function to write a pickle file containing the updated pynorm calculations
+    Autogenerates a filename of the form:ion_z_redshift_ra_dec.p
+    '''
+    if filename == 'None':
+        filename = spec['ion']+'_z_'+str(spec['redshift'])+str(spec['RA'])+'_'+str(spec['Dec'])
+
+    with open(filename+'.p', "wb") as file:
+        pickle.dump(spec, file)
+
 def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
     import numpy as np
     from collections import OrderedDict
@@ -169,7 +181,7 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
     if spec['v1'] == spec['v2']:
         spec['v1'] = -100.
         spec['v2'] = +100.
-    
+
     spec = continuum_fit(spec,minord=spec['contin_order']-1,maxord=spec['contin_order']+1)
     spec = pyn_batch(spec, verbose=False, partial_pixels=partial_pixels)
 
