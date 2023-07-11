@@ -116,6 +116,7 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
     spec['contin_mask_bits'] = np.zeros(len(spec_in['wc'])) #True = included
     spec['contin_mask_bits'][masked_area] = 0
     spec['contin_mask_bits'][~masked_area] = 1
+    spec['contin_mask_bits'][spec['flux']<0] = 0 #this masks the blemishes
     spec['mask_cont'] = np.zeros(len(spec_in['wc']))
     spec['mask_cont'][masked_area] = 0
     spec['mask_cont'][~masked_area] = 1
