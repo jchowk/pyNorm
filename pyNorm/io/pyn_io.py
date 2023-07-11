@@ -119,6 +119,7 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
     spec['mask_cont'] = np.zeros(len(spec_in['wc']))
     spec['mask_cont'][masked_area] = 0
     spec['mask_cont'][~masked_area] = 1
+    spec['mask_cont'][spec['flux']<0] = 0 #this masks the blemishes
     spec = __convert_inorm_mask(spec)
     #
     # Normalized spectrum
@@ -166,6 +167,8 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
     spec['ncol_err_lo'] = spec_in['Nsig']
     spec['ncol_err_hi'] = spec_in['Nsig']
     spec['flag_sat'] = False
+    # added a flag for blemishes
+    spec['flag_blemish'] = False
     #
     spec['va'] = 0.0#spec_in['va'] #average velocity
     spec['va_err'] = 0.0#spec_in['vaerr']
@@ -321,6 +324,8 @@ def read_inorm(input_filename, partial_pixels=True):
     spec['ncol_err_lo'] = spec_in['ncole1']
     spec['ncol_err_hi'] = spec_in['ncole2']
     spec['flag_sat'] = False
+    # added a flag for blemishes
+    spec['flag_blemish'] = False
     #
     spec['va'] = spec_in['va']
     spec['va_err'] = spec_in['vaerr']
