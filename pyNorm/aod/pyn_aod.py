@@ -1,5 +1,6 @@
 import numpy as np
-
+from scipy import interpolate
+import matplotlib.pyplot as plt
 # Assumptions:
 #
 #  -- Arrays are passed as velocity, flux
@@ -463,7 +464,6 @@ def pyn_istat(spec_in,integration_limits = None,
                 partial_pixels = True):
 
     spec = spec_in.copy()
-
     # FIX NON-WRITEABLE ARRAYS due to discontiguous
     # memory in some readsav inputs
     if ~spec['vel'].flags.writeable:
@@ -643,9 +643,26 @@ def pyn_istat(spec_in,integration_limits = None,
         pass
 
     return spec
+# Added by saloni 
+def pyn_blemish(spec_in):
+    spec = spec_in.copy()
+
+    for i in range(len(spec['vel'])):
+        if (((spec['eflux'][i]==-1.)|(spec['eflux'][i]>1))&(spec['vel'][i]>=-500)&(spec['vel'][i]<=500)):
+            spec['flag_blemish']=True #check
+            x = (spec['vel'][i-20:i+21]).tolist(); y = (spec['flux'][i-20:i+21]).tolist(); z = (spec['eflux'][i-20:i+21]).tolist()
+            ind = np.where((np.array(y)==0.0)|(np.array(z)>1))[0]
+            for k in sorted(ind,reverse=True):
+                del x[k]; del y[k]
+            if (x[len(x)-1]<spec['vel'][i]):   # does not correct for blemishes on the edges, skips it
+                continue
+            else:
+                ff=interpolate.interp1d(x,y)
+                spec['flux'][i]=ff(spec['vel'][i])
+    return spec
 
 def pyn_batch(spec_in,integration_limits = None,
-                partial_pixels = True,
+                partial_pixels = True, blemish_correction=True,
                 verbose = True):
 
     spec = spec_in.copy()
@@ -660,11 +677,12 @@ def pyn_batch(spec_in,integration_limits = None,
     # Make sure there are integration limits:
     if integration_limits is None:
         integration_limits = [spec['v1'],spec['v2']]
-
+    if blemish_correction:
+        spec = pyn_blemish(spec)
     spec = pyn_eqwidth(spec,integration_limits, partial_pixels)
     spec = pyn_column(spec,integration_limits, partial_pixels)
     spec = pyn_istat(spec,integration_limits, partial_pixels)
-
+    
     dashes = '--------------------------------------------'
     if verbose:
 
@@ -687,6 +705,9 @@ def pyn_batch(spec_in,integration_limits = None,
 
         print('\n'+dashes)
         # Print column densities:
+        if spec['flag_blemish']:
+            print('***** WARNING: BLEMISH! *****')
+
         if spec['flag_sat']:
             print('***** WARNING: SATURATION IS PRESENT! *****')
             print(dashes)
