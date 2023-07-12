@@ -648,7 +648,7 @@ def pyn_istat(spec_in,integration_limits = None,
 def pyn_blemish(spec_in,blemish_correction):
     spec = spec_in.copy()
     if blemish_correction:
-        print('Will correct for blemishes, if present.')
+        print('***** Will correct for blemishes, if present. *****')
     for i in range(len(spec['vel'])):
         if (((spec['eflux'][i]==-1.)|(spec['eflux'][i]>1))&(spec['vel'][i]>=-500)&(spec['vel'][i]<=500)):
             spec['flag_blemish']=True #check
