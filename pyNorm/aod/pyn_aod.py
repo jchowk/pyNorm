@@ -644,21 +644,22 @@ def pyn_istat(spec_in,integration_limits = None,
 
     return spec
 # Added by saloni 
-def pyn_blemish(spec_in):
+def pyn_blemish(spec_in,blemish_correction):
     spec = spec_in.copy()
 
     for i in range(len(spec['vel'])):
         if (((spec['eflux'][i]==-1.)|(spec['eflux'][i]>1))&(spec['vel'][i]>=-500)&(spec['vel'][i]<=500)):
             spec['flag_blemish']=True #check
-            x = (spec['vel'][i-20:i+21]).tolist(); y = (spec['flux'][i-20:i+21]).tolist(); z = (spec['eflux'][i-20:i+21]).tolist()
-            ind = np.where((np.array(y)==0.0)|(np.array(z)>1))[0]
-            for k in sorted(ind,reverse=True):
-                del x[k]; del y[k]
-            if (x[len(x)-1]<spec['vel'][i]):   # does not correct for blemishes on the edges, skips it
-                continue
-            else:
-                ff=interpolate.interp1d(x,y)
-                spec['flux'][i]=ff(spec['vel'][i])
+            if blemish_correction:
+                x = (spec['vel'][i-20:i+21]).tolist(); y = (spec['flux'][i-20:i+21]).tolist(); z = (spec['eflux'][i-20:i+21]).tolist()
+                ind = np.where((np.array(y)==0.0)|(np.array(z)>1))[0]
+                for k in sorted(ind,reverse=True):
+                    del x[k]; del y[k]
+                if (x[len(x)-1]<spec['vel'][i]):   # does not correct for blemishes on the edges, skips it
+                    continue
+                else:
+                    ff=interpolate.interp1d(x,y)
+                    spec['flux'][i]=ff(spec['vel'][i])
     return spec
 
 def pyn_batch(spec_in,integration_limits = None,
