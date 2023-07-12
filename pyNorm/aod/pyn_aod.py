@@ -644,12 +644,15 @@ def pyn_istat(spec_in,integration_limits = None,
 
     return spec
 # Added by saloni 
+# to turn off blemish_correction set it to False in both pyn_batch and read_rbcodes
 def pyn_blemish(spec_in,blemish_correction):
     spec = spec_in.copy()
-
+    if blemish_correction:
+        print('Will correct for blemishes, if present.')
     for i in range(len(spec['vel'])):
         if (((spec['eflux'][i]==-1.)|(spec['eflux'][i]>1))&(spec['vel'][i]>=-500)&(spec['vel'][i]<=500)):
             spec['flag_blemish']=True #check
+    
             if blemish_correction:
                 x = (spec['vel'][i-20:i+21]).tolist(); y = (spec['flux'][i-20:i+21]).tolist(); z = (spec['eflux'][i-20:i+21]).tolist()
                 ind = np.where((np.array(y)==0.0)|(np.array(z)>1))[0]
@@ -707,7 +710,7 @@ def pyn_batch(spec_in,integration_limits = None,
         print('\n'+dashes)
         # Print column densities:
         if spec['flag_blemish']:
-            print('***** WARNING: BLEMISH! *****')
+            print('***** WARNING: BLEMISHES PRESENT! *****')
 
         if spec['flag_sat']:
             print('***** WARNING: SATURATION IS PRESENT! *****')
