@@ -650,8 +650,9 @@ def pyn_blemish(spec_in,blemish_correction):
     if blemish_correction:
         print('***** Will correct for blemishes, if present. *****')
     for i in range(len(spec['vel'])):
-        if (((spec['eflux'][i]==-1.)|(spec['eflux'][i]>1))&(spec['vel'][i]>=-500)&(spec['vel'][i]<=500)):
-            spec['flag_blemish']=True #check
+        if (((spec['eflux'][i]==-1.)|(spec['eflux'][i]>1))):
+            if ((spec['vel'][i]>=spec['v1'])&(spec['vel'][i]<=spec['v2'])):
+                spec['flag_blemish']=True #check
     
             if blemish_correction:
                 x = (spec['vel'][i-20:i+21]).tolist(); y = (spec['flux'][i-20:i+21]).tolist(); z = (spec['eflux'][i-20:i+21]).tolist()
@@ -663,6 +664,7 @@ def pyn_blemish(spec_in,blemish_correction):
                 else:
                     ff=interpolate.interp1d(x,y)
                     spec['flux'][i]=ff(spec['vel'][i])
+                    spec['eflux'][i]=0.0
     return spec
 
 def pyn_batch(spec_in,integration_limits = None,
@@ -681,8 +683,8 @@ def pyn_batch(spec_in,integration_limits = None,
     # Make sure there are integration limits:
     if integration_limits is None:
         integration_limits = [spec['v1'],spec['v2']]
-    if blemish_correction:
-        spec = pyn_blemish(spec)
+    
+    spec = pyn_blemish(spec)
     spec = pyn_eqwidth(spec,integration_limits, partial_pixels)
     spec = pyn_column(spec,integration_limits, partial_pixels)
     spec = pyn_istat(spec,integration_limits, partial_pixels)
@@ -710,7 +712,7 @@ def pyn_batch(spec_in,integration_limits = None,
         print('\n'+dashes)
         # Print column densities:
         if spec['flag_blemish']:
-            print('***** WARNING: BLEMISHES PRESENT! *****')
+            print('***** WARNING: BLEMISHES PRESENT IN THE INTEGRATION RANGE! *****')
 
         if spec['flag_sat']:
             print('***** WARNING: SATURATION IS PRESENT! *****')
