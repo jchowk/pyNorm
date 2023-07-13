@@ -664,7 +664,7 @@ def pyn_blemish(spec_in,blemish_correction):
                 else:
                     ff=interpolate.interp1d(x,y)
                     spec['flux'][i]=ff(spec['vel'][i])
-                    spec['eflux'][i]=0.0
+                    spec['eflux'][i]=-1.1
     return spec
 
 def pyn_batch(spec_in,integration_limits = None,
