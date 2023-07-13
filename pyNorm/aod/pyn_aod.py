@@ -659,12 +659,14 @@ def pyn_blemish(spec_in,blemish_correction):
                 ind = np.where((np.array(y)==0.0)|(np.array(z)>1))[0]
                 for k in sorted(ind,reverse=True):
                     del x[k]; del y[k]
+                if (len(x)<2):                     # unable to interpolate if blemish is on the leftmost edge
+                    continue
                 if (x[len(x)-1]<spec['vel'][i]):   # does not correct for blemishes on the edges, skips it
                     continue
                 else:
                     ff=interpolate.interp1d(x,y)
                     spec['flux'][i]=ff(spec['vel'][i])
-                    spec['eflux'][i]=-1.1
+                    spec['eflux'][i]=-0.9
     return spec
 
 def pyn_batch(spec_in,integration_limits = None,
