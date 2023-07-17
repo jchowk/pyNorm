@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pickle
 from matplotlib.backends.backend_pdf import PdfPages
 import glob
-fi = input("ENTER SIGHTLINE:")                  #user input for a given sightline directory
+fi = input("ENTER SIGHTLINE: (or path to folder named thus)")                  #user input for a given sightline directory
 ra = float(input("ra of QSO:"))
 dec = float(input("dec of QSO:"))
 redshift = input("ENTER REDSHIFT OF THE ABSORBER:")
