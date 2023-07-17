@@ -686,7 +686,7 @@ def pyn_batch(spec_in,integration_limits = None,
     if integration_limits is None:
         integration_limits = [spec['v1'],spec['v2']]
     
-    spec = pyn_blemish(spec)
+    spec = pyn_blemish(spec,blemish_correction)
     spec = pyn_eqwidth(spec,integration_limits, partial_pixels)
     spec = pyn_column(spec,integration_limits, partial_pixels)
     spec = pyn_istat(spec,integration_limits, partial_pixels)
