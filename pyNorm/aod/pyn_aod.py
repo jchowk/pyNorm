@@ -665,7 +665,10 @@ def pyn_blemish(spec_in,blemish_correction):
                     continue
                 else:
                     ff=interpolate.interp1d(x,y)
-                    spec['flux'][i]=ff(spec['vel'][i])
+                    if (ff(spec['vel'][i])>=0):
+                        spec['flux'][i]=ff(spec['vel'][i])
+                    else:
+                        spec['flux'][i]=0.0
                     spec['eflux'][i]=-0.9
     return spec
 
