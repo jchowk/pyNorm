@@ -1,4 +1,4 @@
-def save_pyn_results(spec,filename = 'None'):
+def save_pyn(spec,filename = 'None'):
     import pickle
     '''
     Function to write a pickle file containing the updated pynorm calculations
@@ -10,12 +10,12 @@ def save_pyn_results(spec,filename = 'None'):
     with open(filename+'.p', "wb") as file:
         pickle.dump(spec, file)
 
-def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
+def read_rbcodes(input_filename, ion, targname='NoTargName', ra=0.00, dec=0.00, partial_pixels=True):
     import numpy as np
     from collections import OrderedDict
     from scipy.io import readsav
-    from pyNorm.aod import pyn_batch
-    from pyNorm.continuum import continuum_fit
+    from pynorm.aod import pyn_batch
+    from pynorm.continuum import continuum_fit
     import pickle
     from astropy.coordinates import SkyCoord
 
@@ -53,13 +53,7 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
     spec['gamma'] = spec_in['gamma']
     spec['redshift'] = spec_in['z']
 
-    #this whole section through the vlsr is not adjusted for rbcodes yet
-    #don't have the info in the pickle file right now
-    # Sometimes targname key is missing:
-    try:
-        spec['targname'] = targname#spec_in['targname']
-    except:
-        spec['targname'] = 'NoTargName'#spec_in['object']
+    spec['targname'] = targname#spec_in['targname']
 
     # Fix binary format
     try:
@@ -182,7 +176,7 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True):
         spec['v1'] = -100.
         spec['v2'] = +100.
 
-    spec = continuum_fit(spec,minord=spec['contin_order']-1,maxord=spec['contin_order']+1)
+    spec = continuum_fit(spec,minord=spec['contin_order'],maxord=spec['contin_order'])
     spec = pyn_batch(spec, verbose=False, partial_pixels=partial_pixels)
 
     return spec

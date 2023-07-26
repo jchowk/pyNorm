@@ -649,7 +649,6 @@ def pyn_batch(spec_in,integration_limits = None,
                 verbose = True):
 
     spec = spec_in.copy()
-    print(spec['contin_mask_bool'])
 
     # FIX NON-WRITEABLE ARRAYS due to discontiguous
     # memory in some readsav inputs
@@ -713,7 +712,6 @@ def pyn_batch(spec_in,integration_limits = None,
         print('Cont Error   = {0:0.2f}'.format(spec['EW_err_cont']))
         print('Tot Error    = {0:0.2f}'.format(spec['EW_err']))
         print('3sigma EW    < {0:0.2f}'.format(ew3sigma))
-        print(type(spec['detection_3sig']))
         if not spec['detection_3sig']:
             print('***** WARNING: LINE NOT DETECTED AT 3 SIGMA! *****')
 
