@@ -443,6 +443,7 @@ def pyn_eqwidth(spec_in,integration_limits = None,
         spec['detection_3sig'] = False
 
 
+
     # Delete the old versions of the EW quantities
     try:
         del spec['w']
@@ -711,7 +712,7 @@ def pyn_batch(spec_in,integration_limits = None,
         print('Cont Error   = {0:0.2f}'.format(spec['EW_err_cont']))
         print('Tot Error    = {0:0.2f}'.format(spec['EW_err']))
         print('3sigma EW    < {0:0.2f}'.format(ew3sigma))
-        if ~spec['detection_3sig']:
+        if not spec['detection_3sig']:
             print('***** WARNING: LINE NOT DETECTED AT 3 SIGMA! *****')
 
         print('\n')
