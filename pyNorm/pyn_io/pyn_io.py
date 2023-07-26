@@ -1,4 +1,4 @@
-def save_pyn(spec,filename = 'None'):
+def pyn_save(spec,filename = 'None'):
     import pickle
     '''
     Function to write a pickle file containing the updated pynorm calculations
