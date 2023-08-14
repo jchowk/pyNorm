@@ -664,7 +664,7 @@ def pyn_blemish(spec_in,blemish_correction):
                 if (x[len(x)-1]<spec['vel'][i]):   # does not correct for blemishes on the edges, skips it
                     continue
                 else:
-                    ff=interpolate.interp1d(x,y)
+                    ff=interpolate.interp1d(x,y,fill_value='extrapolate')
                     if (ff(spec['vel'][i])>=0):
                         spec['flux'][i]=ff(spec['vel'][i])
                     else:
@@ -677,7 +677,6 @@ def pyn_batch(spec_in,integration_limits = None,
                 verbose = True):
 
     spec = spec_in.copy()
-    print(spec['contin_mask_bool'])
 
     # FIX NON-WRITEABLE ARRAYS due to discontiguous
     # memory in some readsav inputs

@@ -186,7 +186,7 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True, bl
         spec['v1'] = -100.
         spec['v2'] = +100.
 
-    spec = continuum_fit(spec,minord=spec['contin_order'],maxord=spec['contin_order']+1)
+    spec = continuum_fit(spec,minord=max(1,spec['contin_order']),maxord=max(1,spec['contin_order']+1))
     spec = pyn_batch(spec, verbose=True, partial_pixels=partial_pixels,blemish_correction=blemish_correction)
 
     return spec
