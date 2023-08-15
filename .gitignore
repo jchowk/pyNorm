@@ -11,3 +11,6 @@ nl_aod/
 nl_inorm/
 dist/
 docs/Testing/*
+*checkpoint.ipynb
+.vscode/
+docs/.ipynb_checkpoints/
