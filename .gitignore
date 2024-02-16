@@ -2,3 +2,15 @@
 .DS_Store
 *.pyc
 *~
+00Structure
+00ToDo
+00whatidid
+scratch.py
+nl_cgm_idl/
+nl_aod/
+nl_inorm/
+dist/
+docs/Testing/*
+*checkpoint.ipynb
+.vscode/
+docs/.ipynb_checkpoints/

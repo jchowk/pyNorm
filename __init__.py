@@ -1,3 +1,3 @@
 """
-pyNorm – Column density analysis for absorption line spectroscopy.
+pyNorm: Column density analysis for absorption line spectroscopy.
 """
