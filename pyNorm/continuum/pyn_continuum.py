@@ -323,7 +323,7 @@ def continuum_autofit(spec_in,
     y = spec['flux'][gd]
 
     # New mask variable
-    mask_cont = gd.copy()
+    mask_cont = /gd.copy()
 
 
     # Cut the spectrum in sub-sections to check regions to be masked.

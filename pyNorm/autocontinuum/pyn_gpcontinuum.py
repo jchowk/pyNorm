@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 
 # Read data from IDL save file
 # input_filename = 'Data/CIV1548.2i_o.save'
-input_filename = 'Data/sk-67D211_OVI1031.9_fusei_o.save'
-# input_filename = 'Data/sk-67D211_CIV1548.2_e140mi_o.save'
+# input_filename = 'Data/sk-67D211_OVI1031.9_fusei_o.save'
+input_filename = 'Data/sk-67D211_CIV1548.2_e140mi_o.save'
 spec = read_inorm(input_filename)
 
 # Mask really bad pixels and pixels with large velocities
