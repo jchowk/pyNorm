@@ -1,5 +1,6 @@
 import numpy as np
-
+from scipy import interpolate
+import matplotlib.pyplot as plt
 # Assumptions:
 #
 #  -- Arrays are passed as velocity, flux
@@ -463,7 +464,6 @@ def pyn_istat(spec_in,integration_limits = None,
                 partial_pixels = True):
 
     spec = spec_in.copy()
-
     # FIX NON-WRITEABLE ARRAYS due to discontiguous
     # memory in some readsav inputs
     if ~spec['vel'].flags.writeable:
@@ -643,9 +643,37 @@ def pyn_istat(spec_in,integration_limits = None,
         pass
 
     return spec
+# Added by saloni 
+# to turn off blemish_correction set it to False in both pyn_batch and read_rbcodes
+def pyn_blemish(spec_in,blemish_correction):
+    spec = spec_in.copy()
+    if blemish_correction:
+        print('***** Will correct for blemishes, if present. *****')
+    for i in range(len(spec['vel'])):
+        if (((spec['eflux'][i]==-1.)|(spec['eflux'][i]>1))):
+            if ((spec['vel'][i]>=spec['v1'])&(spec['vel'][i]<=spec['v2'])):
+                spec['flag_blemish']=True #check
+    
+            if blemish_correction:
+                x = (spec['vel'][i-20:i+21]).tolist(); y = (spec['flux'][i-20:i+21]).tolist(); z = (spec['eflux'][i-20:i+21]).tolist()
+                ind = np.where((np.array(y)==0.0)|(np.array(z)>1))[0]
+                for k in sorted(ind,reverse=True):
+                    del x[k]; del y[k]
+                if (len(x)<2):                     # unable to interpolate if blemish is on the leftmost edge
+                    continue
+                if (x[len(x)-1]<spec['vel'][i]):   # does not correct for blemishes on the edges, skips it
+                    continue
+                else:
+                    ff=interpolate.interp1d(x,y,fill_value='extrapolate')
+                    if (ff(spec['vel'][i])>=0):
+                        spec['flux'][i]=ff(spec['vel'][i])
+                    else:
+                        spec['flux'][i]=0.0
+                    spec['eflux'][i]=-0.9
+    return spec
 
 def pyn_batch(spec_in,integration_limits = None,
-                partial_pixels = True,
+                partial_pixels = True, blemish_correction=True,
                 verbose = True):
 
     spec = spec_in.copy()
@@ -659,11 +687,12 @@ def pyn_batch(spec_in,integration_limits = None,
     # Make sure there are integration limits:
     if integration_limits is None:
         integration_limits = [spec['v1'],spec['v2']]
-
+    
+    spec = pyn_blemish(spec,blemish_correction)
     spec = pyn_eqwidth(spec,integration_limits, partial_pixels)
     spec = pyn_column(spec,integration_limits, partial_pixels)
     spec = pyn_istat(spec,integration_limits, partial_pixels)
-
+    
     dashes = '--------------------------------------------'
     if verbose:
 
@@ -686,6 +715,9 @@ def pyn_batch(spec_in,integration_limits = None,
 
         print('\n'+dashes)
         # Print column densities:
+        if spec['flag_blemish']:
+            print('***** WARNING: BLEMISHES PRESENT IN THE INTEGRATION RANGE! *****')
+
         if spec['flag_sat']:
             print('***** WARNING: SATURATION IS PRESENT! *****')
             print(dashes)

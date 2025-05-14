@@ -10,7 +10,7 @@ def pyn_save(spec,filename = 'None'):
     with open(filename+'.p', "wb") as file:
         pickle.dump(spec, file)
 
-def read_rbcodes(input_filename, ion, targname='NoTargName', ra=0.00, dec=0.00, partial_pixels=True):
+def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True, blemish_correction=True):
     import numpy as np
     from collections import OrderedDict
     from scipy.io import readsav
@@ -110,9 +110,12 @@ def read_rbcodes(input_filename, ion, targname='NoTargName', ra=0.00, dec=0.00, 
     spec['contin_mask_bits'] = np.zeros(len(spec_in['wc'])) #True = included
     spec['contin_mask_bits'][masked_area] = 0
     spec['contin_mask_bits'][~masked_area] = 1
+    spec['contin_mask_bits'][spec['flux']<0] = 0 
     spec['mask_cont'] = np.zeros(len(spec_in['wc']))
     spec['mask_cont'][masked_area] = 0
     spec['mask_cont'][~masked_area] = 1
+    spec['mask_cont'][spec['flux']<0] = 0      
+                          # added by saloni lines 122,123
     spec = __convert_inorm_mask(spec)
     #
     # Normalized spectrum
@@ -160,6 +163,7 @@ def read_rbcodes(input_filename, ion, targname='NoTargName', ra=0.00, dec=0.00, 
     spec['ncol_err_lo'] = spec_in['Nsig']
     spec['ncol_err_hi'] = spec_in['Nsig']
     spec['flag_sat'] = False
+    spec['flag_blemish'] = False
     #
     spec['va'] = 0.0#spec_in['va'] #average velocity
     spec['va_err'] = 0.0#spec_in['vaerr']
@@ -176,12 +180,12 @@ def read_rbcodes(input_filename, ion, targname='NoTargName', ra=0.00, dec=0.00, 
         spec['v1'] = -100.
         spec['v2'] = +100.
 
+    spec = pyn_batch(spec, verbose=True, partial_pixels=partial_pixels,blemish_correction=blemish_correction)
     spec = continuum_fit(spec,minord=spec['contin_order'],maxord=spec['contin_order'])
-    spec = pyn_batch(spec, verbose=False, partial_pixels=partial_pixels)
 
     return spec
 
-def read_inorm(input_filename, partial_pixels=True):
+def read_inorm(input_filename, partial_pixels=True, blemish_correction=True):
     import numpy as np
     from collections import OrderedDict
     from scipy.io import readsav
@@ -331,7 +335,7 @@ def read_inorm(input_filename, partial_pixels=True):
         spec['v1'] = -100.
         spec['v2'] = +100.
 
-    spec = pyn_batch(spec, verbose=False, partial_pixels=partial_pixels)
+    spec = pyn_batch(spec, verbose=False, partial_pixels=partial_pixels, blemish_correction=blemish_correction)
 
     return spec
 
