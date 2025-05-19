@@ -12,6 +12,11 @@ See the [Installation](Installation.md) documentation.
 * `matplotlib`
 * `astropy`
 * [`linetools`](https://github.com/linetools/linetools)
+* `pandas`
+* `PyQt5`
+* `future`
+* `setuptools`
+* `statistics`
 
 ## Contributing
 
