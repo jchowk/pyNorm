@@ -1568,11 +1568,15 @@ class Transitions:
 
         #app.setPalette(palette)
         main = mainWindow(Abs,intervening=intervening)
-        main.resize(1800,900)
-
+        main.resize(1800, 900)
         main.show()
-        #app.exec_()
-
         QtWidgets.QApplication.setQuitOnLastWindowClosed(True)
-        app.exec_()
-        app.quit()
+
+        try:
+            exit_code = app.exec_()
+            main.deleteLater()         # Schedule proper deletion
+            app.processEvents()        # Handle pending events
+            sys.exit(exit_code)        # Clean exit
+        except Exception as e:
+            print(f"Error during shutdown: {e}")
+            sys.exit(1)

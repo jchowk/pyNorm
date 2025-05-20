@@ -13,11 +13,9 @@ flux; wave; error; linelist; redshift; bin
 
 3rd. Initialized entries for the Vstack plotting
 '''
-
 import numpy as np
 import numpy.polynomial.legendre as L
 from statistics import mean
-from __future__ import print_function, absolute_import, division, unicode_literals
 import numpy as np
 from astropy.io import ascii
 from pkg_resources import resource_filename
