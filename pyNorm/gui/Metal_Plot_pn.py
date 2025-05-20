@@ -525,8 +525,9 @@ def plot_intervening_lines(ax,outlist,delv):
 
 class mainWindow(QtWidgets.QTabWidget):
     
-    def __init__(self,ions, parent=None,intervening=False):
+    def __init__(self,ions, parent=None,intervening=False,instrument = None):
         #-----full spectra properties---------#
+        self.instrument = instrument or 'GENERIC'
         self.z = ions['Target']['z']; self.flux = ions['Target']['flux']
         self.wave = ions['Target']['wave']; self.error = ions['Target']['error']
         #------------------------------------#
@@ -1497,7 +1498,7 @@ class SavePage(QtWidgets.QWidget):
         tablelabel.setGeometry(100,175,400,30)
         
         self.tableline = QLineEdit(self)
-        self.tableline.setText("Spectrum_Analysis_z_"+str(parentvals.z)+"_Measurement_Table.dat")
+        self.tableline.setText(parentvals.instrument+"_z_"+str(parentvals.z)+"_Measurement_Table.dat")
         self.tableline.setGeometry(100,200,300,30)
         
         self.tablesave = QPushButton("Save Table",self)
@@ -1509,7 +1510,7 @@ class SavePage(QtWidgets.QWidget):
         picklelabel.setGeometry(100,250,400,30)
         
         self.pickleline = QLineEdit(self)
-        self.pickleline.setText("Spectrum_Analysis_z_"+str(parentvals.z)+".p")
+        self.pickleline.setText(parentvals.instrument+"_z_"+str(parentvals.z)+".p")
         self.pickleline.setGeometry(100,275,300,30)
         
         self.picklesave = QPushButton("Save Progress",self)
@@ -1519,7 +1520,7 @@ class SavePage(QtWidgets.QWidget):
         
 #Initial inputs and callable class to run proram        
 class Transitions:
-    def __init__(self,Abs,intervening=False):
+    def __init__(self,Abs,intervening=False,instrument=None):
         if not QtWidgets.QApplication.instance():
             app = QtWidgets.QApplication(sys.argv)
             app.setStyle("Fusion")
@@ -1563,7 +1564,7 @@ class Transitions:
         #palette.setColor(QPalette.Text, QtCore.Qt.white)
 
         #app.setPalette(palette)
-        main = mainWindow(Abs,intervening=intervening)
+        main = mainWindow(Abs,intervening=intervening,instrument=instrument)
         main.resize(1800, 900)
         main.show()
         QtWidgets.QApplication.setQuitOnLastWindowClosed(True)

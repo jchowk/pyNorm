@@ -12,6 +12,7 @@ flux=a.flux.value
 error=a.sig.value
 #------------------------------
 
+instrument = 'HIRES'
 #Specify redshift at which to perform analysis
 z=2.23275
 
@@ -23,4 +24,4 @@ lines = [1036.3367,1334,1191,1193.29,1206,1394,1402,1549,1550,1304,1808]
 # Create an absorber class to feed into the main GUI
 absys=A.Absorber(z,wave,flux,error,lines=lines)   
 Abs=absys.ions
-M.Transitions(Abs)
+M.Transitions(Abs, instrument=instrument)
