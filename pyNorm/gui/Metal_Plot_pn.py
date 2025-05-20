@@ -1416,19 +1416,33 @@ class SavePage(QtWidgets.QWidget):
         ba_list = []; ba_err_list = []
         dv90_list = []; dv90_err_list = []
 
+        # Collect ions with missing EW/N/med_vel fields
+        unevaluated_keys = ['EW', 'EWsig', 'N', 'Nsig', 'med_vel']
+        unevaluated_ions = []
+
         for ion in parentvals.keys:
             this_ion = parentvals.ions[ion]
+            if any(this_ion.get(k) is None for k in unevaluated_keys):
+                unevaluated_ions.append(ion)
 
-            # Warn for unevaluated
-            if any(this_ion.get(k) is None for k in ['EW', 'EWsig', 'N', 'Nsig', 'med_vel']):
-                reply = QMessageBox.question(self, 'Message', "Unevaluated ions, proceed to save?",
-                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                if reply == QMessageBox.No:
-                    self.closewin = None
-                    return self.closewin
-                else:
-                    for k in ['EW', 'EWsig', 'N', 'Nsig', 'med_vel']:
-                        this_ion[k] = np.nan
+        # If any unevaluated ions, ask user once
+        if unevaluated_ions:
+            reply = QMessageBox.question(
+                self,
+                'Warning',
+                f"{len(unevaluated_ions)} ions are unevaluated. Proceed and fill with NaNs?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply == QMessageBox.No:
+                self.closewin = None
+                return self.closewin
+            else:
+                for ion in unevaluated_ions:
+                    this_ion = parentvals.ions[ion]
+                    for k in unevaluated_keys:
+                        if this_ion.get(k) is None:
+                            this_ion[k] = np.nan
 
     # EW/N info
             EW.append(np.round(this_ion['EW'], 2))
