@@ -531,7 +531,8 @@ class mainWindow(QtWidgets.QTabWidget):
         self.wave = ions['Target']['wave']; self.error = ions['Target']['error']
         #------------------------------------#
         self.old_axes = None
-        self.tab_names = ['Ions', 'Ions 2','Ions 3', 'Ions 4', 'Ions 5']
+        self.tab_names = [f'Ions {i+1}' for i in range(20)]  # supports up to 20 tabs
+
         self.ions = ions
         self.keys = list(self.ions.keys())[:-1] # last item is the full target spectrum
         # -- Auto-continuum fitting for all ions --
@@ -1252,43 +1253,23 @@ class plotText:
         line['text'] = text
         
 class AddPage:
-    
-    def __init__(self,parent,):
-        #what happens initiall if you run it and ionlist == 18?
-        #and need a condition to not run if page has already been initialized
-        nall = len(parent.keys)
+    def __init__(self, parent):
+        ions_per_page = 6
+        total_ions = len(parent.keys)
+        existing_pages = len(parent.figs)
+        total_pages_needed = (total_ions + ions_per_page - 1) // ions_per_page
 
-        if ((nall>6)&(len(parent.figs)<2)):
-            parent.page = 1 
-            
+        # Only add more pages if needed
+        while len(parent.figs) < total_pages_needed:
+            parent.page = len(parent.figs)
+
             initialize(parent)
-            
-            parent.cid4 = parent.figs[parent.page].canvas.mpl_connect("button_press_event", parent.onclick)
-            parent.cid5 = parent.figs[parent.page].canvas.mpl_connect("key_press_event", parent.onpress)
-            parent.cid6 = parent.figs[parent.page].canvas.mpl_connect("motion_notify_event", parent.onmotion)
-        elif ((nall>12)&(len(parent.figs)<3)):
-            parent.page = 2
-            initialize(parent)
-            
-            parent.cid7 = parent.figs[parent.page].canvas.mpl_connect("button_press_event", parent.onclick)
-            parent.cid8 = parent.figs[parent.page].canvas.mpl_connect("key_press_event", parent.onpress)
-            parent.cid9 = parent.figs[parent.page].canvas.mpl_connect("motion_notify_event", parent.onmotion)
-        elif ((nall>18)&(len(parent.figs)<4)):
-            parent.page = 3
-            
-            initialize(parent)
-            
-            parent.cid10 = parent.figs[parent.page].canvas.mpl_connect("button_press_event", parent.onclick)
-            parent.cid11 = parent.figs[parent.page].canvas.mpl_connect("key_press_event", parent.onpress)
-            parent.cid12 = parent.figs[parent.page].canvas.mpl_connect("motion_notify_event", parent.onmotion)
-        elif ((nall>24)&(len(parent.figs)<5)):
-            parent.page = 4
-            
-            self.initialize(parent)
-            
-            parent.cid13 = parent.figs[parent.page].canvas.mpl_connect("button_press_event", parent.onclick)
-            parent.cid14 = parent.figs[parent.page].canvas.mpl_connect("key_press_event", parent.onpress)
-            parent.cid15 = parent.figs[parent.page].canvas.mpl_connect("motion_notify_event", parent.onmotion)
+
+            canvas = parent.figs[parent.page].canvas
+            canvas.mpl_connect("button_press_event", parent.onclick)
+            canvas.mpl_connect("key_press_event", parent.onpress)
+            canvas.mpl_connect("motion_notify_event", parent.onmotion)
+
             
 class initialize:
     def __init__(self,parent):
@@ -1341,14 +1322,15 @@ class initialize:
         self.main_layout.addLayout(self.bot_layout,stretch=1)
         parent.tabs[parent.page].setLayout(self.main_layout)
 
-        
-        
-        #len(parent.keys/6 -len(parent.page)) #can you make more general? you ave to
-        parent.nions.append(len(parent.keys)-6*parent.page)
-        
+        ions_per_page = 6
+        start_idx = parent.page * ions_per_page
+        end_idx = min(start_idx + ions_per_page, len(parent.keys))
+        n_ions_on_page = end_idx - start_idx
+        parent.nions.append(n_ions_on_page)
+
         #initializing left and right axes
         parent.axesL.append(list(range(6))); parent.axesR.append(list(range(6))); parent.axesN.append(list(range(6)))                   
-        for ii in range(parent.nions[parent.page]):
+        for ii in range(n_ions_on_page):
             parent.axesL[parent.page][ii] = parent.figs[parent.page].add_subplot(6,3,3*ii+1)
             parent.axesR[parent.page][ii] = parent.figs[parent.page].add_subplot(6,3,3*ii+2)
             parent.axesN[parent.page][ii] = parent.figs[parent.page].add_subplot(6,3,3*ii+3)
