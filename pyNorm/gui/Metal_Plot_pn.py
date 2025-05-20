@@ -143,9 +143,6 @@ def compute_EW(lam,flx,wrest,lmts,flx_err,plot=False,**kwargs):
         #compute apparent optical depth
         Tau_a =np.log(1./norm_flx);
         
-        
-
-
 
         # REMEMBER WE ARE SWITCHING TO VELOCITY HERE
         del_vel_j=np.diff(vel);
@@ -445,7 +442,7 @@ def plot_nav_panel(parent, key_idx, ii):
     if flag == -1 and 'ncol_linear2sig' in ion_data:
         text = r"$\log N < {0:.2f}$".format(ion_data['ncol_linear2sig'])
     elif np.isfinite(logN) and np.isfinite(logN_lo) and np.isfinite(logN_hi):
-        text = r"$\log N = {0:.2f}^{{+{1:.2f}}}_{{-{2:.2f}}}$".format(logN, logN_hi, logN_lo)
+        text = r"$\log N = {0:.2f}^{{+{1:.2f}}}_{{{2:.2f}}}$".format(logN, logN_hi, logN_lo)
     else:
         text = r"$\log N$: NA"
 
@@ -1399,16 +1396,16 @@ class SavePage(QtWidgets.QWidget):
         ba_list = []; ba_err_list = []
         dv90_list = []; dv90_err_list = []
 
-        # Collect ions with missing EW/N/med_vel fields
         unevaluated_keys = ['EW', 'EWsig', 'N', 'Nsig', 'med_vel']
         unevaluated_ions = []
 
+        # First pass: check if anything is missing
         for ion in parentvals.keys:
             this_ion = parentvals.ions[ion]
             if any(this_ion.get(k) is None for k in unevaluated_keys):
                 unevaluated_ions.append(ion)
 
-        # If any unevaluated ions, ask user once
+        # Warn if unevaluated
         if unevaluated_ions:
             reply = QMessageBox.question(
                 self,
@@ -1420,23 +1417,30 @@ class SavePage(QtWidgets.QWidget):
             if reply == QMessageBox.No:
                 self.closewin = None
                 return self.closewin
-            else:
-                for ion in unevaluated_ions:
-                    this_ion = parentvals.ions[ion]
-                    for k in unevaluated_keys:
-                        if this_ion.get(k) is None:
-                            this_ion[k] = np.nan
 
-    # EW/N info
-            EW.append(np.round(this_ion['EW'], 2))
-            EWsig.append(np.round(this_ion['EWsig'], 2))
-            N.append(np.round(np.log10(this_ion['N']), 2) if this_ion['N'] > 0 else np.nan)
-            Nsig.append(np.round(np.log10(this_ion['Nsig']), 2) if this_ion['Nsig'] > 0 else np.nan)
-            Vel.append(np.round(this_ion['med_vel'], 2))
-            EWlims_low.append(np.round(this_ion['EWlims'][0], 2))
-            EWlims_high.append(np.round(this_ion['EWlims'][1], 2))
+        # Second pass: fill everything properly
+        for ion in parentvals.keys:
+            this_ion = parentvals.ions[ion]
 
-    # pynorm values
+        # Fill missing keys with NaN if needed
+            for k in unevaluated_keys:
+                if this_ion.get(k) is None:
+                    this_ion[k] = np.nan
+
+            EW.append(np.round(this_ion.get('EW', np.nan), 2))
+            EWsig.append(np.round(this_ion.get('EWsig', np.nan), 2))
+    
+            N_val = this_ion.get('N', np.nan)
+            Nsig_val = this_ion.get('Nsig', np.nan)
+            N.append(np.round(np.log10(N_val), 2) if N_val > 0 else np.nan)
+            Nsig.append(np.round(np.log10(Nsig_val), 2) if Nsig_val > 0 else np.nan)
+            Vel.append(np.round(this_ion.get('med_vel', np.nan), 2))
+
+            lims = this_ion.get('EWlims', [np.nan, np.nan])
+            EWlims_low.append(np.round(lims[0], 2))
+            EWlims_high.append(np.round(lims[1], 2))
+
+            # pynorm values
             flag = this_ion.get('nav_flag', np.nan)
             pyn_flags.append(flag)
 
@@ -1453,15 +1457,17 @@ class SavePage(QtWidgets.QWidget):
                 N_lo_pyn.append(np.nan)
                 N_hi_pyn.append(np.nan)
 
-    # velocity structure parameters
+            # velocity structure parameters
             va_list.append(np.round(this_ion.get('va', np.nan), 2))
             va_err_list.append(np.round(this_ion.get('va_err', np.nan), 2))
             ba_list.append(np.round(this_ion.get('ba', np.nan), 2))
             ba_err_list.append(np.round(this_ion.get('ba_err', np.nan), 2))
             dv90_list.append(np.round(this_ion.get('dv90', np.nan), 2))
-            dv90_err_list.append(np.round(this_ion.get('va_err', np.nan) * np.sqrt(2), 2) if this_ion.get('va_err') else np.nan)
+            dv90_err_list.append(
+                np.round(this_ion.get('va_err', np.nan) * np.sqrt(2), 2) if this_ion.get('va_err') else np.nan
+            )
 
-# Assign columns
+        # Assign columns to the table
         Table_e['EW'] = EW
         Table_e['EWsig'] = EWsig
         Table_e['Vmin'] = EWlims_low
@@ -1480,6 +1486,7 @@ class SavePage(QtWidgets.QWidget):
         Table_e['dv90'] = dv90_list
         Table_e['dv90_err'] = dv90_err_list
 
+
         print(Table_e)
         
         #pdf save
@@ -1487,7 +1494,7 @@ class SavePage(QtWidgets.QWidget):
         pdflabel.setGeometry(100,100,400,30)
         
         self.pdfline = QLineEdit(self)
-        self.pdfline.setText('Spectrum_Analysis_z_'+str(parentvals.z)+'_Ions.pdf')
+        self.pdfline.setText(parentvals.instrument+'_z_'+str(parentvals.z)+'_Ions.pdf')
         self.pdfline.setGeometry(100,125,300,30)
         
         self.pdfsave = QPushButton("save PDF",self)
