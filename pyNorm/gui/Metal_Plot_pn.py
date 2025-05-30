@@ -22,13 +22,21 @@ from matplotlib.backends.backend_qt5agg import (
 )
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPalette, QColor
-
+import traceback
+from PyQt5.QtWidgets import QMessageBox
 from . import Absorber_pn
-
+from matplotlib.axes import Axes
 from pynorm.aod import pyn_batch
 from pynorm.continuum import continuum_fit
 
 rcParams['lines.linewidth'] = .9
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if not issubclass(exc_type, KeyboardInterrupt):
+        print("Uncaught exception:", exc_type, exc_value)
+        
+        tb_str = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+        QMessageBox.critical(None, "Python Error", tb_str)
+
 
 def compute_EW(lam,flx,wrest,lmts,flx_err,plot=False,**kwargs):
     """
@@ -533,6 +541,12 @@ class mainWindow(QtWidgets.QTabWidget):
 
         self.ions = ions
         self.keys = list(self.ions.keys())[:-1] # last item is the full target spectrum
+        # --- Ensure contamination_mask exists for all ions ---
+        for key in self.keys:
+            if 'contamination_mask' not in self.ions[key]:
+                wave = self.ions[key]['wave']
+                self.ions[key]['contamination_mask'] = np.zeros_like(wave, dtype=bool)
+
         # -- Auto-continuum fitting for all ions --
         for key in self.keys:
             ion_data = self.ions[key]
@@ -559,12 +573,31 @@ class mainWindow(QtWidgets.QTabWidget):
                     self.ions[key]['order'] = order
                     self.ions[key]['pco'] = coeffs
                     self.ions[key]['wc'] = mask_full
+                    # --- Normalize flux and set initial y-limits for plotting ---
+                    norm_flux = flux / cont
+                    ylims = [0.0, np.nanmax(norm_flux) * 1.2]
+                    self.ions[key]['y_lim'] = ylims
+                    self.ions[key]['y_lim_init'] = ylims.copy()
+
+# --- Compute velocity array for this ion (needed for axis limits, masks) ---
+                    vel = (wave - wline * (1 + zabs)) / wline / (1 + zabs) * 2.9979e5
+                    self.ions[key]['vel'] = vel
+                    self.ions[key]['contamination_mask'] = np.zeros_like(wave, dtype=bool)
+
+# --- Set default window limits if not already present ---
+                    if 'window_lim' not in self.ions[key]:
+                        window_lim = [-1000, 1000]
+                        self.ions[key]['window_lim'] = window_lim
+                        self.ions[key]['window_lim_p'] = window_lim.copy()
+
                 except Exception as e:
                     print(f"[AutoFit] Skipped {key} due to: {e}")
 
         self.wc = None #initialize overall parameter
         self.ylims = []
         self.vclim = None
+        self.vclim_contam = None
+
         self.vclim_all = []
         self.name = None
         self.EWlim = [None,None] #left,right
@@ -611,6 +644,12 @@ class mainWindow(QtWidgets.QTabWidget):
         self.PageLabel = QtWidgets.QLabel("Page: " + str(self.currentIndex()+1)+"/"+str(len(self.figs)),self)
         self.PageLabel.setStyleSheet("font: 16pt;color: white;background-color:QColor(53, 53, 53)")
         
+        self.zoom_combo = QtWidgets.QComboBox(self)
+        self.zoom_combo.setGeometry(340, 30, 180, 30)  # Position it to the left of Save
+        self.zoom_combo.addItems(["Zoom ±1000 km/s", "Zoom ±500 km/s", "Zoom ±250 km/s"])
+        self.zoom_combo.setCurrentIndex(0)
+        self.zoom_combo.currentIndexChanged.connect(self.apply_zoom_from_combo)
+
         self.main_layout = QVBoxLayout()
         self.top_layout = QHBoxLayout()
         self.bot_layout = QHBoxLayout()
@@ -626,13 +665,16 @@ class mainWindow(QtWidgets.QTabWidget):
         
         self.bot_layout.addItem(self.spacerItem)
         self.bot_layout.addWidget(self.PageLabel)
+        self.status_label = QLabel(" ", self)
+        self.status_label.setStyleSheet("color: white; font: 20pt;")
+        self.bot_layout.addWidget(self.status_label)
+
         self.bot_layout.addItem(self.spacerItem)
         
         self.main_layout.addLayout(self.top_layout,stretch=1)
         self.main_layout.addWidget(self.canvas[0],stretch=14)
         self.main_layout.addLayout(self.bot_layout,stretch=1) #0.5
         self.tabs[self.page].setLayout(self.main_layout)
-        
         
         #initializing left and right axes
         self.axesL = [list(range(6))]; self.axesR = [list(range(6))]; self.axesN = [list(range(6))]
@@ -663,11 +705,39 @@ class mainWindow(QtWidgets.QTabWidget):
 #         self.PageLabel.setStyleSheet("font: 16pt;color: black;background-color:white")
 #         self.PageLabel.setGeometry(630,850,200,30)
         
+    def apply_zoom_from_combo(self):
+        selected = self.zoom_combo.currentText()
+        if "1000" in selected:
+            vmax = 1000
+        elif "500" in selected:
+            vmax = 500
+        elif "250" in selected:
+            vmax = 250
+        else:
+            vmax = 1000  # default fallback
+
+        for page_idx in range(len(self.figs)):
+            for ii in range(self.nions[page_idx]):
+                key_idx = page_idx * 6 + ii
+                if key_idx >= len(self.keys):
+                    continue
+                key = self.keys[key_idx]
+                self.ions[key]['window_lim_p'] = [-vmax, vmax]
+
+                try:
+                    self.axesL[page_idx][ii].set_xlim(-vmax, vmax)
+                    self.axesR[page_idx][ii].set_xlim(-vmax, vmax)
+                    self.axesN[page_idx][ii].set_xlim(-vmax, vmax)
+                except Exception:
+                    pass
+
+            self.figs[page_idx].canvas.draw_idle()
+
+
         
-        
-        def getPage(self):
-            self.page = self.currentIndex()
-            self.PageLabel.setText("Page: " + str(self.page+1)+"/"+str(len(self.figs)))
+    def getPage(self):
+        self.page = self.currentIndex()
+        self.PageLabel.setText("Page: " + str(self.page+1)+"/"+str(len(self.figs)))
         self.currentChanged.connect(lambda: getPage(self))
             
 #-------------------Add Ion Button------------------------------# 
@@ -743,94 +813,143 @@ class mainWindow(QtWidgets.QTabWidget):
         self.sub = HelpWindow()
         self.sub.show()
 
-# ----------------- Added by saloni to remove ions from the GUI ------------------------ #
-    def updatePlotAfterIonRemoval(self,ion_removed):
-    # Clear all existing subplots
-        print('Removed ion in update plot:',ion_removed)
-        for page in range(len(self.figs)):
-            for ii in range(self.nions[page]):
-                self.axesL[page][ii].clear()
-                self.axesR[page][ii].clear()
-    # Replot the remaining ions
-        if len(self.figs) > 1:
-            if self.nions[len(self.figs)-1]>1:
-                self.nions[len(self.figs)-1]=self.nions[len(self.figs)-1]-1
-            else:
-                self.nions.pop()
-                self.figs.pop()
-        else :
-            self.nions[len(self.figs)-1]=self.nions[len(self.figs)-1]-1
-                    
-        for page in range(len(self.figs)):
-            for ii in range(self.nions[page]):
-                Plotting(self, ii, modify=True, ion_removed=ion_removed)
-# ----------------- Added by saloni to remove ions from the GUI ------------------------ #
-    def removeIon(self,parent):
+# ----------------- Updated by saloni to remove ions from the GUI ------------------------ #
+    def removeIon(self, parent):
         ion_to_remove, ok4 = QInputDialog.getText(self, 'Remove Ion', 'Enter ion to be removed:')
         if ok4:
-        # Check if the entered ion exists
             if ion_to_remove in self.ions:
-            # Remove the ion from the dictionary
+                index_removed = self.keys.index(ion_to_remove)
+
+                # Remove from data structures
                 self.ions.pop(ion_to_remove)
-                self.updatePlotAfterIonRemoval(ion_removed=ion_to_remove)
+                self.keys.remove(ion_to_remove)
+
+                total_ions = len(self.keys)
+                total_pages = (total_ions + 5) // 6  # ceil division
+
+                # If no ions remain
+                if total_ions == 0:
+                    self.page = 0
+                    self.Ridx = None
+                    self.Lidx = None
+                else:
+                    # Adjust current page to the last valid one if needed
+                    self.page = min(self.page, total_pages - 1)
+                    new_index = min(index_removed, total_ions - 1)
+                    self.Ridx = new_index % 6
+                    self.Lidx = self.Ridx
+
+                # Trim unused pages if needed
+                if len(self.figs) > total_pages:
+                    for pg in range(total_pages, len(self.figs)):
+                        self.removeTab(pg)
+                    self.figs = self.figs[:total_pages]
+                    self.canvas = self.canvas[:total_pages]
+                    self.tabs = self.tabs[:total_pages]
+                    self.axesL = self.axesL[:total_pages]
+                    self.axesR = self.axesR[:total_pages]
+                    self.axesN = self.axesN[:total_pages]
+                    self.nions = self.nions[:total_pages]
+
+                self.updatePlotAfterIonRemoval()
             else:
                 QMessageBox.warning(self, 'Warning', 'Ion not found.')
-            
-#         self.openButton = QPushButton("Help",  self)
-#         self.openButton.setGeometry(830,30,200,30)
-#         self.openButton.clicked.connect(lambda: opensub(self))
 
-        
-        
-    def onmotion(self,event):
-        #self.PageLabel.setText("Page: " + str(self.currentIndex()+1)+"/"+str(len(self.figs)))
+    def updatePlotAfterIonRemoval(self):
+        """Redraw plots and update state after ion removal."""
+        if self.page >= len(self.figs):  # avoid out-of-bounds if page count changed
+            self.page = len(self.figs) - 1
 
+        # Clear figure and axes on current page
+        self.figs[self.page].clf()
+        self.axesL[self.page] = []
+        self.axesR[self.page] = []
+        self.axesN[self.page] = []
+
+        if len(self.keys) == 0:
+            self.nions[self.page] = 0
+            self.canvas[self.page].draw()
+            self.PageLabel.setText(f"Page: {self.page + 1}/{len(self.figs)}")
+            return
+
+        start_idx = self.page * 6
+        end_idx = min(start_idx + 6, len(self.keys))
+        self.nions[self.page] = end_idx - start_idx
+
+        for ii in range(self.nions[self.page]):
+            actual_ion_idx = start_idx + ii
+            self.axesL[self.page].append(self.figs[self.page].add_subplot(6, 3, 3 * ii + 1))
+            self.axesR[self.page].append(self.figs[self.page].add_subplot(6, 3, 3 * ii + 2))
+            self.axesN[self.page].append(self.figs[self.page].add_subplot(6, 3, 3 * ii + 3))
+
+            try:
+                Plotting(self, ii, modify=True)
+            except Exception as e:
+                print(f"Plotting failed for index {ii}: {e}")
+
+        self.figs[self.page].subplots_adjust(hspace=0.01, left=0.05, right=0.98, wspace=0.1)
+        self.canvas[self.page].draw()
+        self.PageLabel.setText(f"Page: {self.page + 1}/{len(self.figs)}")
+
+
+    def onmotion(self, event):
         if event.inaxes is None:
+            self.status_label.setText(" ")
             return
-        page_found = [i for i, (aL, aR) in enumerate(zip(self.axesL, self.axesR)) if event.inaxes in aL or event.inaxes in aR]
-        if len(page_found) == 0:
+    
+    # Find which page this event came from by checking the figure canvas
+        event_page = None
+        for page_idx, fig in enumerate(self.figs):
+            if event.canvas == fig.canvas:
+                event_page = page_idx
+                break
+    
+        if event_page is None:
+            self.status_label.setText(" ")
             return
-        self.page = page_found[0]
-        if event.xdata != None and event.ydata != None:
-            #pdb.set_trace()
-            
-#             for qq in range(len(self.axesL)):
-#                 if (event.inaxes in self.axesL[qq]) | (event.inaxes in self.axesR[qq]) :
-#                     self.page = qq
-
-            self.page = np.where((np.asarray(self.axesL)==event.inaxes)|(np.asarray(self.axesR)==event.inaxes))[0][0]
-            if len(np.where(np.asarray(self.axesL[self.page]) == event.inaxes)[0]) == 0:
-                self.Lidx = None
-                self.Ridx = np.where(np.asarray(self.axesR[self.page])==event.inaxes)[0][0]
-                
-                if self.old_axes  and (self.old_axes != self.axesR[self.page][self.Ridx]):
-                    for pos in ['top','bottom','left','right']:
-                        self.old_axes.spines[pos].set_edgecolor('black')
-                        self.old_axes.spines[pos].set_linewidth(0.5)
-                    self.figs[self.page].canvas.draw()
-                if self.old_axes != self.axesR[self.page][self.Ridx]:
-                    for pos in ['top','bottom','left','right']:
-                        self.axesR[self.page][self.Ridx].spines[pos].set_edgecolor('#01DF01')
-                        self.axesR[self.page][self.Ridx].spines[pos].set_linewidth(2)
-                    self.figs[self.page].canvas.draw()
-                    self.old_axes = self.axesR[self.page][self.Ridx]
-                
-            else:
-                self.Ridx = None
-                self.Lidx = np.where(np.asarray(self.axesL[self.page]) == event.inaxes)[0][0]
-                if (self.old_axes != None) and (self.old_axes != self.axesL[self.page][self.Lidx]):
-                    for pos in ['top','bottom','left','right']:
-                        self.old_axes.spines[pos].set_edgecolor('black')
-                        self.old_axes.spines[pos].set_linewidth(0.5)
-                        
-                if self.old_axes != self.axesL[self.page][self.Lidx]:
-                        for pos in ['top','bottom','left','right']:
-                            self.axesL[self.page][self.Lidx].spines[pos].set_edgecolor('#01DF01')
-                            self.axesL[self.page][self.Lidx].spines[pos].set_linewidth(2)
-                        self.figs[self.page].canvas.draw()
-                        self.old_axes = self.axesL[self.page][self.Lidx]
-
-
+    
+    # Update the active page to match where the mouse is
+        old_page = self.page
+        self.page = event_page
+    
+    # Find which subplot contains the current axes (only check the event page)
+        found = False
+        if event.inaxes in self.axesL[event_page]:
+            self.Lidx = self.axesL[event_page].index(event.inaxes)
+            self.Ridx = None
+            found = True
+        elif event.inaxes in self.axesR[event_page]:
+            self.Ridx = self.axesR[event_page].index(event.inaxes)
+            self.Lidx = None
+            found = True
+        elif event.inaxes in self.axesN[event_page]:
+            self.Lidx = None
+            self.Ridx = None
+            found = True
+    
+        if not found:
+            self.status_label.setText(" ")
+            return
+    
+    # Highlight active axes - clear old highlighting first
+        if hasattr(self, 'old_axes') and self.old_axes and self.old_axes != event.inaxes:
+            for pos in ['top', 'bottom', 'left', 'right']:
+                self.old_axes.spines[pos].set_edgecolor('black')
+                self.old_axes.spines[pos].set_linewidth(0.5)
+        # Redraw the figure that contained the old axes
+            if hasattr(self, 'old_page') and self.old_page is not None:
+                self.figs[self.old_page].canvas.draw()
+    
+    # Highlight new axes
+        if not hasattr(self, 'old_axes') or self.old_axes != event.inaxes:
+            for pos in ['top', 'bottom', 'left', 'right']:
+                event.inaxes.spines[pos].set_edgecolor('#01DF01')
+                event.inaxes.spines[pos].set_linewidth(2)
+            self.figs[self.page].canvas.draw()
+            self.old_axes = event.inaxes
+            self.old_page = self.page  # Store which page had the old axes
+    
+            self.status_label.setText(" ")
 
 #----------------------key button events-----------------------------#            
     
@@ -874,15 +993,16 @@ class mainWindow(QtWidgets.QTabWidget):
             else:
                 print('click on a left transition window first')
                 
-        #reduce polynomial        
+        # Reduce polynomial, but don't allow order < 0
         if event.key == 'down':
             if self.Lidx is not None:
-                key_idx = self.page*6+self.Lidx
-#                 if self.page == 0:
-                self.ions[self.keys[key_idx]]['order'] = self.ions[self.keys[key_idx]]['order']-1
-                Plotting(self,self.Lidx,modify=True)
+                key_idx = self.page * 6 + self.Lidx
+                current_order = self.ions[self.keys[key_idx]]['order']
+                self.ions[self.keys[key_idx]]['order'] = max(0, current_order - 1)
+                Plotting(self, self.Lidx, modify=True)
             else:
                 print('click on a transition window first')
+
         # Added by saloni
         if event.key == ']':
             if self.Lidx is not None:
@@ -990,13 +1110,13 @@ class mainWindow(QtWidgets.QTabWidget):
         
         #use same range for all ion Velocity limits and directly measured by following with clicks bounds on a single subplot
         if event.key == 'V':
-            EWlims = self.ions[self.keys[self.Ridx+6*self.page]]['EWlims']
+            EWlims = self.ions[self.keys[self.Ridx + 6 * self.page]]['EWlims']
             for jj in range(len(self.figs)):
                 self.page = jj
                 for ii in range(self.nions[self.page]):
+                    self.ions[self.keys[ii + self.page * 6]]['EWlims'] = EWlims.copy()
+                    Plotting(self, ii, modify=False, Print=False)
 
-                    self.ions[self.keys[ii+self.page*6]]['EWlims'] = EWlims
-                    Plotting(self,ii,modify=False,Print=False)
 
         if event.key in ['0','1','2']: #detection, upperlimit, lower limit
             key_idx = self.page*6 +self.Ridx
@@ -1013,9 +1133,38 @@ class mainWindow(QtWidgets.QTabWidget):
         if event.key == 'N':
             self.handle_nav_keypress()
 
-        
+        if event.key == 'r':
+            if self.Lidx is not None:
+                key_idx = self.page * 6 + self.Lidx
+                ion = self.ions[self.keys[key_idx]]
+
+                ion['window_lim_p'] = ion['window_lim'].copy()
+
+                if 'y_lim_init' in ion:
+                    ion['y_lim'] = ion['y_lim_init'].copy()
+                else:
+                    ion['y_lim'] = [0, 1.5]  # or some fallback default
+
+                Plotting(self, self.Lidx, modify=True)
+
+            elif self.Ridx is not None:
+                key_idx = self.page * 6 + self.Ridx
+                ion = self.ions[self.keys[key_idx]]
+
+                ion['window_lim_p'] = ion['window_lim'].copy()
+
+                if 'y_lim_init' in ion:
+                    ion['y_lim'] = ion['y_lim_init'].copy()
+
+                Plotting(self, self.Ridx, modify=False)
+
+                # Na(v) reset if available
+                if 'nav_ylim_init' in ion:
+                    self.axesN[self.page][self.Ridx].set_ylim(ion['nav_ylim_init'])
+                    self.figs[self.page].canvas.draw()
+
+
 #------------------------------click button events----------------------------#        
-            
     def onclick(self, event):
         if event.button in [1, 3]:
             # --- Left panel: continuum masking --- #
@@ -1042,7 +1191,7 @@ class mainWindow(QtWidgets.QTabWidget):
                     else:
                         self.vclim = None
 
-            # --- Right panel: set EW limits --- #
+        # --- Right panel: set EW limits --- #
             if self.Ridx is not None:
                 key_idx = self.page * 6 + self.Ridx
                 if event.button == 1:
@@ -1053,7 +1202,78 @@ class mainWindow(QtWidgets.QTabWidget):
                     self.EWlim[1] = event.xdata
                     self.ions[self.keys[key_idx]]['EWlims'][1] = event.xdata
                     Plotting(self, self.Ridx, modify=False, Print=False)
-                           
+                       
+        # --- Bottom panel: contamination masking --- #
+            if event.inaxes in self.axesN[self.page]:
+                self.Nidx = self.axesN[self.page].index(event.inaxes)
+            
+            # Initialize contamination mask selection state
+                if not hasattr(self, 'contam_vclim'):
+                    self.contam_vclim = None
+
+                if not hasattr(self, 'contam_vclim_marker'):
+                    self.contam_vclim_marker = None
+
+                key_idx = self.page * 6 + self.Nidx
+                vel = self.ions[self.keys[key_idx]]['vel']
+
+            # Start new selection or complete existing selection
+                if self.contam_vclim is None:
+                # First click - start selection
+                    self.contam_vclim = [event.xdata]
+                    self.contam_vclim_marker = self.axesN[self.page][self.Nidx].plot(event.xdata, event.ydata, 'ro', ms=5)[0]
+                    self.figs[self.page].canvas.draw()
+                else:
+                # Second click - complete selection and apply mask
+                    if event.xdata is not None:
+                        vclim = np.sort(np.append(self.contam_vclim, event.xdata))
+                        self.contam_vclim = None
+                    
+                    # Remove the marker
+                        if self.contam_vclim_marker:
+                            self.contam_vclim_marker.remove()
+                            self.contam_vclim_marker = None
+                    
+                    # Get current contamination mask
+                        contam_mask = self.ions[self.keys[key_idx]]['contamination_mask']
+                    
+                    # Apply mask logic (same as left panel but for contamination_mask)
+                        if event.button == 1:
+                        # Left click: mark selected region as contaminated (True)
+                            new_mask = (vel >= vclim[0]) & (vel <= vclim[1])
+                            contam_mask[new_mask] = True
+                        else:
+                        # Right click: mark selected region as clean (False)
+                            new_mask = (vel >= vclim[0]) & (vel <= vclim[1])
+                            contam_mask[new_mask] = False
+                    
+                    # Update the mask
+                        self.ions[self.keys[key_idx]]['contamination_mask'] = contam_mask
+                    
+                        # Redraw
+                        Plotting(self, self.Nidx, modify=True)
+                        # Force canvas refresh to ensure red shading appears immediately
+                        self.figs[self.page].canvas.draw()
+                        self.figs[self.page].canvas.flush_events()
+                    else:
+                    # Cancel selection if click is outside axes
+                        self.contam_vclim = None
+                        if self.contam_vclim_marker:
+                            self.contam_vclim_marker.remove()
+                            self.contam_vclim_marker = None
+
+
+def get_mask_regions(vel, mask):
+    from itertools import groupby
+    from operator import itemgetter
+    idxs = np.where(mask)[0]
+    if len(idxs) == 0:
+        return []
+    grouped = []
+    for k, g in groupby(enumerate(idxs), lambda x: x[0] - x[1]):
+        group = list(map(itemgetter(1), g))
+        grouped.append((vel[group[0]], vel[group[-1]]))
+    return grouped
 
 class Plotting:
     def __init__(self, parent, ii, modify=False, Print=False, **kwargs):
@@ -1083,8 +1303,17 @@ class Plotting:
 
         if not Print:
             if modify:
-                parent.ions[parent.keys[key_idx]]['pco'] = L.Legendre.fit(wave[wc], flux[wc], order, w=weight[wc])
-                parent.ions[parent.keys[key_idx]]['cont'] = parent.ions[parent.keys[key_idx]]['pco'](wave)
+                try:
+                    if len(wave[wc]) > 0 and order >= 0:
+                        parent.ions[parent.keys[key_idx]]['pco'] = L.Legendre.fit(wave[wc], flux[wc], order, w=weight[wc])
+                        parent.ions[parent.keys[key_idx]]['cont'] = parent.ions[parent.keys[key_idx]]['pco'](wave)
+                    else:
+                        raise ValueError("Invalid data for fitting")
+                except Exception as e:
+                    print(f"[PolyFit] Fallback due to error: {e}")
+                    parent.ions[parent.keys[key_idx]]['pco'] = L.Legendre([1.0])  # flat continuum
+                    parent.ions[parent.keys[key_idx]]['cont'] = np.ones_like(wave)
+
                 cont = parent.ions[parent.keys[key_idx]]['cont']
 
                 if wc[0]:
@@ -1140,15 +1369,15 @@ class Plotting:
             parent.axesL[parent.page][ii].set_ylim(ylims)
             parent.axesR[parent.page][ii].set_ylim([0, 2.2])
 
-            if ii != parent.nions[parent.page] - 1:
-                parent.axesL[parent.page][ii].set_xticks([])
-                parent.axesR[parent.page][ii].set_xticks([])
-            else:
-                if ii > 0:
-                    parent.axesL[parent.page][ii - 1].set_xticks([])
-                    parent.axesR[parent.page][ii - 1].set_xticks([])
-                parent.axesL[parent.page][ii].set_xlabel('Velocity (km/s)')
-                parent.axesR[parent.page][ii].set_xlabel('Velocity (km/s)')
+            # Show tick marks on all axes, but label only the bottom one
+            for ax in [parent.axesL[parent.page][ii], parent.axesR[parent.page][ii]]:
+                ax.tick_params(axis='x', which='both', bottom=True, top=False)
+                if ii == parent.nions[parent.page] - 1:
+                    ax.set_xlabel('Velocity (km/s)')
+                    ax.tick_params(labelbottom=True)
+                else:
+                    ax.tick_params(labelbottom=False)
+
 
             if ii == 0:
                 parent.axesL[parent.page][0].set_title('Continuum Fitter')
@@ -1180,6 +1409,15 @@ class Plotting:
             # ---- Auto-plot Na(v) if already available ----
             if all(k in parent.ions[parent.keys[key_idx]] for k in ['Nav', 'Nav_err', 'Nav_vel']):
                 plot_nav_panel(parent, key_idx, ii)
+            # --- Overlay contamination mask regions ---
+            key = parent.keys[parent.page * 6 + ii]
+            contam_mask = parent.ions[key].get('contamination_mask', None)
+
+            if contam_mask is not None and np.any(contam_mask):
+                vel = parent.ions[key]['vel']
+                regions = get_mask_regions(vel, contam_mask)
+                for vmin, vmax in regions:
+                    parent.axesN[parent.page][ii].axvspan(vmin, vmax, color='red', alpha=0.3)
 
         if Print:
             if parent.ions[parent.keys[key_idx]]['EW_text'] is not None:
@@ -1341,6 +1579,7 @@ class initialize:
         # Set up connectivity and Need to set click focus for keyboard functionality
         parent.figs[parent.page].canvas.setFocusPolicy( QtCore.Qt.ClickFocus )
         parent.figs[parent.page].canvas.setFocus()            
+        parent.figs[parent.page].canvas.mpl_connect('motion_notify_event', parent.onmotion)
 
 
 
@@ -1529,6 +1768,8 @@ class SavePage(QtWidgets.QWidget):
 class Transitions:
     def __init__(self,Abs,intervening=False,instrument=None):
         if not QtWidgets.QApplication.instance():
+            # Set the exception hook BEFORE launching the app
+            sys.excepthook = handle_exception
             app = QtWidgets.QApplication(sys.argv)
             app.setStyle("Fusion")
 

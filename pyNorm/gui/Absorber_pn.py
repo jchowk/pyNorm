@@ -116,35 +116,8 @@ def read_line_list(label):
     
 
     if label=='atom':
-        filename=resource_filename('IGM','lines/atom_full.dat')
-    elif label == 'LLS':
-        filename=resource_filename('IGM','lines/lls.lst')
-    elif label == 'LLS Small':
-        filename=resource_filename('IGM','lines/lls_sub.lst')
-    elif label == 'DLA':
-        filename=resource_filename('IGM','lines/dla.lst')
-    elif label == 'LBG':
-        filename=resource_filename('IGM','lines/lbg.lst')
-    elif label == 'Gal':
-        filename=resource_filename('IGM','lines/gal_vac.lst')
-    elif label == 'Eiger_Strong':
-        filename=resource_filename('IGM','lines/Eiger_Strong.lst')
-    elif label == 'Gal_Em':
-        filename=resource_filename('IGM','lines/Galaxy_emission_Lines.lst')
-    elif label == 'Gal_Abs':
-        filename=resource_filename('IGM','lines/Galaxy_absorption_Lines.lst')
-    elif label == 'Gal_long':
-        filename=resource_filename('IGM','lines/Galaxy_Long_E_n_A.lst')
-    elif label == 'AGN':
-        filename=resource_filename('IGM','lines/AGN.lst')
-    elif label == 'HI_recomb':
-        filename=resource_filename('IGM','lines/HI_recombination.lst')
-    elif label == 'HI_recomb_light':
-        filename=resource_filename('IGM','lines/HI_recombination_light.lst')
- 
+        filename=resource_filename('pynorm.gui','lines/atom_full.dat')
 
-    else:
-        print('Give Correct LineList')
 
     data = []
 
@@ -155,7 +128,14 @@ def read_line_list(label):
         for line in range(0,len(s['col1'])):
             source = {}
             source['wrest'] = float(s['col2'][line])
-            source['ion'] = s['col1'][line]+' '+np.str_(int(s['col2'][line]))
+            ion_label = s['col1'][line]
+            wrest_val = float(s['col2'][line])
+
+            if (ion_label.startswith("NI")) and (ion_label!='NII'):  # Apply only to nitrogen NI species
+                source['ion'] = f"{ion_label} {wrest_val:.2f}"
+            else:
+                source['ion'] = f"{ion_label} {int(wrest_val)}"
+
             source['fval']=float(s['col3'][line])
             source['gamma']=float(s['col4'][line])
 
