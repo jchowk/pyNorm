@@ -30,6 +30,9 @@ from pynorm.aod import pyn_batch
 from pynorm.continuum import continuum_fit
 
 rcParams['lines.linewidth'] = .9
+
+USE_COMPUTE_EW = False  # Turn to True to re-enable compute_EW (Rongmon's function)
+
 def handle_exception(exc_type, exc_value, exc_traceback):
     if not issubclass(exc_type, KeyboardInterrupt):
         print("Uncaught exception:", exc_type, exc_value)
@@ -392,7 +395,7 @@ def compute_nav_profile(ion_data):
     spec['contin_mask_bits'] = np.ones_like(vel)
 
     spec = pyn_batch(spec, verbose=False, partial_pixels=True, blemish_correction=True)
-    spec = continuum_fit(spec, minord=spec['contin_order'], maxord=spec['contin_order'])
+    #spec = continuum_fit(spec, minord=spec['contin_order'], maxord=spec['contin_order'])
     if spec['flag_sat']:
         flag = -2
     elif not spec['detection_3sig']:
@@ -777,10 +780,23 @@ class mainWindow(QtWidgets.QTabWidget):
 
         # --- Compute Na(v) ---
             nav_spec = compute_nav_profile(ion_data)
+            self.ions[ion_key]['flux'] = nav_spec['flux']
+            self.ions[ion_key]['error'] = nav_spec['eflux']
+            self.ions[ion_key]['cont'] = nav_spec['contin']  # optional: update continuum too
+            self.ions[ion_key]['tau_array'] = nav_spec.get('tau_array')
+            self.ions[ion_key]['tau_array_err'] = nav_spec.get('tau_array_err')
+            self.ions[ion_key]['fnorm_err'] = nav_spec.get('fnorm_err')
+            self.ions[ion_key]['contin_err'] = nav_spec.get('contin_err')
 
+            self.ions[ion_key]['integration_weights'] = nav_spec['integration_weights']
             self.ions[ion_key]['Nav'] = nav_spec['Nav']
             self.ions[ion_key]['Nav_err'] = nav_spec['Nav_err']
             self.ions[ion_key]['Nav_vel'] = nav_spec['vel']
+            self.ions[ion_key]['EW'] = nav_spec['EW']
+            self.ions[ion_key]['EW_err'] = nav_spec['EW_err']
+            self.ions[ion_key]['N'] = nav_spec['ncol']
+            self.ions[ion_key]['Nsig'] = nav_spec['ncol_err_hi']  # or average of hi/lo
+
             self.ions[ion_key]['ncol_pyn'] = nav_spec['ncol']
             self.ions[ion_key]['ncol_err_lo'] = nav_spec['ncol_err_lo']
             self.ions[ion_key]['ncol_err_hi'] = nav_spec['ncol_err_hi']
@@ -796,10 +812,14 @@ class mainWindow(QtWidgets.QTabWidget):
             plot_nav_panel(self, key_idx, self.Ridx)
 
         # --- Also compute EW/AOD and populate those ---
-            try:
-                EW(self, self.page, self.Ridx, ion_data['EWlims'])
-            except Exception as e:
-                print(f"[Na(v)+EW] Failed EW computation for {ion_key}: {e}")
+            if USE_COMPUTE_EW:
+                try:
+                    EW(self, self.page, self.Ridx, ion_data['EWlims'])
+                except Exception as e:
+                    print(f"[Na(v)+EW] Failed EW computation for {ion_key}: {e}")
+            else:
+                Plotting(self, self.Ridx, modify=False, Print=True)
+
 
 #-------HELP------#
     def onsave(self,parent):
@@ -1464,8 +1484,11 @@ class EW:
 # plots measurements, with toggle will display EW/N 
 class plotText:
     def __init__(self,parent,line):
-        EW_det_text= np.str('%.0f' % line['EW']) + ' $\pm$ ' + np.str('%.0f' % line['EWsig']) + ' m$\AA$'
-        EW_limit_text="<{:.0f} m$\AA$".format(2.*line['EWsig']) #+  ' m$\AA$'
+        ew = line.get('EW')
+        ew_err = line.get('EW_err')  #  pyn_batch
+
+        EW_det_text = np.str('%.0f' % ew) + ' $\pm$ ' + np.str('%.0f' % ew_err) + ' m$\AA$'
+        EW_limit_text = "<{:.0f} m$\AA$".format(2. * ew_err)  # upper limit
         logN_det_text= np.str('%.2f' % np.log10(line['N'])) +' $\pm$ ' + np.str('%.3f' % (np.log10(line['N']+line['Nsig']) - np.log10(line['N']))) + ' /cm$^2$'
 
         #line.flag is the line specific upper/lower/detections
@@ -1626,7 +1649,7 @@ class SavePage(QtWidgets.QWidget):
         Table_e = Table()
         Table_e['Transitions'] = parentvals.keys
 
-        EW = []; EWsig = []; N = []; Nsig = []; Vel = []
+        EW = []; EW_err = []; N = []; Nsig = []; Vel = []
         EWlims_low = []; EWlims_high = []
 
         N_pyn = []; N_lo_pyn = []; N_hi_pyn = []; pyn_flags = []
@@ -1635,7 +1658,7 @@ class SavePage(QtWidgets.QWidget):
         ba_list = []; ba_err_list = []
         dv90_list = []; dv90_err_list = []
 
-        unevaluated_keys = ['EW', 'EWsig', 'N', 'Nsig', 'med_vel']
+        unevaluated_keys = ['EW', 'EW_err', 'N', 'Nsig', 'med_vel']
         unevaluated_ions = []
 
         # First pass: check if anything is missing
@@ -1667,7 +1690,7 @@ class SavePage(QtWidgets.QWidget):
                     this_ion[k] = np.nan
 
             EW.append(np.round(this_ion.get('EW', np.nan), 2))
-            EWsig.append(np.round(this_ion.get('EWsig', np.nan), 2))
+            EW_err.append(np.round(this_ion.get('EW_err', np.nan), 2))
     
             N_val = this_ion.get('N', np.nan)
             Nsig_val = this_ion.get('Nsig', np.nan)
@@ -1708,7 +1731,7 @@ class SavePage(QtWidgets.QWidget):
 
         # Assign columns to the table
         Table_e['EW'] = EW
-        Table_e['EWsig'] = EWsig
+        Table_e['EW_err'] = EW_err
         Table_e['Vmin'] = EWlims_low
         Table_e['Vmax'] = EWlims_high
         Table_e['logN'] = N
