@@ -7,11 +7,28 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 from collections import defaultdict
 from astropy.table import Table, vstack, Column
+from PyPDF2 import PdfMerger
+
+def merge_pdfs_by_pattern(folder_path, pattern, output_filename):
+    search_pattern = os.path.join(folder_path, pattern)
+    pdf_files = sorted(glob.glob(search_pattern))
+
+    if not pdf_files:
+        print(f"No PDF files found for pattern: {pattern}")
+        return
+
+    merger = PdfMerger()
+    for pdf in pdf_files:
+        print(f"Merging: {pdf}")
+        merger.append(pdf)
+
+    output_path = os.path.join(folder_path, output_filename)
+    merger.write(output_path)
+    merger.close()
+    print(f"Merged PDF saved to: {output_path}")
 
 def extract_sightline():
-    cwd = os.getcwd()
-    dirname = os.path.basename(cwd)
-    return dirname
+    return os.path.basename(os.getcwd())
 
 def extract_redshift(filename):
     match = re.search(r'z[_]?(\d+\.\d+)', filename)
@@ -30,7 +47,9 @@ def plot_ion_panels(merged, zval, sightline):
         if not isinstance(data, dict) or 'vel' not in data:
             continue
 
-        vel = data['vel'] ; EWlims = data['EWlims']; v1=EWlims[0]; v2=EWlims[1]
+        vel = data['vel']
+        EWlims = data['EWlims']
+        v1, v2 = EWlims
         fnorm = data.get('flux', np.ones_like(vel)) / data.get('contin', np.ones_like(vel))
         fnorm_err = data.get('fnorm_err', np.zeros_like(vel))
 
@@ -65,8 +84,8 @@ def plot_ion_panels(merged, zval, sightline):
 all_files = os.listdir('.')
 pickle_files = [f for f in all_files if f.endswith('.p') and extract_redshift(f) is not None]
 table_files = [f for f in all_files if f.endswith('.dat') and extract_redshift(f) is not None]
-sightline = os.path.basename(os.path.abspath('.'))
 
+sightline = extract_sightline()
 z_to_pickles = defaultdict(list)
 z_to_tables = defaultdict(list)
 
@@ -90,10 +109,9 @@ for z in sorted(z_to_pickles.keys()):
         for key in data:
             if key == 'Target':
                 merged['Target'] = data['Target']
-                merged['Sightline'] = extract_sightline()
+                merged['Sightline'] = sightline
                 continue
 
-            # Inject instrument tag into the dictionary
             data[key]['instrument'] = instrument
 
             if key in merged and isinstance(merged[key], dict):
@@ -101,20 +119,15 @@ for z in sorted(z_to_pickles.keys()):
             else:
                 merged[key] = data[key]
 
-    # Create output directory
     outdir = f'results_z_{z}'
     os.makedirs(outdir, exist_ok=True)
 
-    # Save merged pickle
     out_pickle = os.path.join(outdir, f'{sightline}_z_{z}_Merged.pkl')
     with open(out_pickle, 'wb') as f:
         pickle.dump(merged, f)
 
-    # Merge associated .dat tables
     if z in z_to_tables:
         dat_tables = []
-        instruments_for_each_table = []
-
         for tf in z_to_tables[z]:
             try:
                 t = Table.read(tf, format='ascii')
@@ -128,12 +141,17 @@ for z in sorted(z_to_pickles.keys()):
             combined_table = vstack(dat_tables, join_type='exact', metadata_conflicts='silent')
             out_table = os.path.join(outdir, f'{sightline}_z_{z}_Merged_Table.dat')
             combined_table.write(out_table, format='ascii.commented_header', overwrite=True)
-    
-    # Also save as CSV
+
             out_csv = os.path.join(outdir, f'{sightline}_z_{z}_Merged_Table.csv')
             combined_table.write(out_csv, format='csv', overwrite=True)
 
             print(f"Saved merged table to: {out_table}")
             print(f"Saved CSV table to: {out_csv}")
+
     # Generate Na(v) and flux plots
     plot_ion_panels(merged, z, sightline)
+
+    # Merge all *_z_<z>_Ions*.pdf for this redshift
+    pattern = f"*z_{z}_Ions*.pdf"
+    output_pdf = f"combined_{z}.pdf"
+    merge_pdfs_by_pattern(folder_path=".", pattern=pattern, output_filename=output_pdf)
