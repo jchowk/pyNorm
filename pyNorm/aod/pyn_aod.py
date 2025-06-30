@@ -166,8 +166,10 @@ def pyn_column(spec_in, integration_limits = None,
     flag_sat = False
 
     velocity = spec['vel'].copy()
-    flux = spec['flux'].copy()
-    flux_err = spec['eflux'].copy()
+    flux = spec['corr_flux'].copy()
+    flux_orig = spec['flux'].copy()
+    flux_err = spec['corr_eflux'].copy()
+    flux_err_orig = spec['eflux'].copy()
     wavc=spec['wavc'].copy()
     fval=spec['fval'].copy()
 
@@ -203,10 +205,12 @@ def pyn_column(spec_in, integration_limits = None,
     # Test for clearly saturated pixels:
     #   -- If the idx_saturation is already filled, use the results:
     try:
-        idx_saturation = ((flux <= 0.) | (idx_saturation == True))
+        idx_saturation = ((flux_orig <= 0.0) | (idx_saturation == True))
     except:
-        idx_saturation = (flux <= 0.)
+        idx_saturation = (flux_orig <= 0.0)
 
+    print("Number of saturated pixels:", len(idx_saturation[(idx_saturation==True)&(velocity>=integration_limits[0])&(velocity<=integration_limits[1])]))
+        
     # Fix saturation if it's present.
     flux[idx_saturation] = np.abs(flux[idx_saturation])
     flux[(flux==0)] = 2.*flux_err[(flux==0)]
@@ -278,7 +282,7 @@ def pyn_column(spec_in, integration_limits = None,
     # Fill the Na(v) arrays
     spec['Nav'] = nav_array
     spec['Nav_err'] = nav_err_tot
-    spec['Nav_sat'] = idx_saturation
+    spec['Nav_sat'] = flag_sat
 
     # Add the weights of the pixel integrations
     spec['integration_weights'] = weights
@@ -479,8 +483,10 @@ def pyn_istat(spec_in,integration_limits = None,
     lightspeed = 2.998e5 # km/s
 
     velocity = spec['vel'].copy()
-    flux = spec['flux'].copy()
-    flux_err = spec['eflux'].copy()
+    flux = spec['corr_flux'].copy()
+    flux_orig = spec['flux'].copy()
+    flux_err = spec['corr_eflux'].copy()
+    flux_err_orig = spec['eflux'].copy()
     wavc=spec['wavc'].copy()
     fval=spec['fval'].copy()
 
@@ -645,31 +651,134 @@ def pyn_istat(spec_in,integration_limits = None,
     return spec
 # Added by saloni 
 # to turn off blemish_correction set it to False in both pyn_batch and read_rbcodes
-def pyn_blemish(spec_in,blemish_correction):
+
+def pyn_blemish(spec_in, blemish_correction):
+    """
+    Corrects blemishes and low S/N pixels in Keck HIRES spectra.
+    
+    Parameters:
+    -----------
+    spec_in : dict
+    blemish_correction : bool
+        
+    Returns:
+    --------
+    spec : dict
+        Spectrum with blemish flags and corrections applied
+    """
     spec = spec_in.copy()
+    lowsn = 0.2
+    # Initialize arrays
+    spec['blemish'] = np.zeros_like(spec['vel'], dtype=bool)
+    spec['lowSN'] = np.zeros_like(spec['vel'], dtype=bool)
+    spec['corr_flux'] = spec['flux'].copy()  
+    spec['corr_eflux'] = spec['eflux'].copy()  
+    spec['flag_blemish'] = False
+    
     if blemish_correction:
         print('***** Will correct for blemishes, if present. *****')
-    for i in range(len(spec['vel'])):
-        if (((spec['eflux'][i]==-1.)|(spec['eflux'][i]>1))):
-            if ((spec['vel'][i]>=spec['v1'])&(spec['vel'][i]<=spec['v2'])):
-                spec['flag_blemish']=True #check
     
-            if blemish_correction:
-                x = (spec['vel'][i-20:i+21]).tolist(); y = (spec['flux'][i-20:i+21]).tolist(); z = (spec['eflux'][i-20:i+21]).tolist()
-                ind = np.where((np.array(y)==0.0)|(np.array(z)>1))[0]
-                for k in sorted(ind,reverse=True):
-                    del x[k]; del y[k]
-                if (len(x)<2):                     # unable to interpolate if blemish is on the leftmost edge
+    n_pixels = len(spec['vel'])
+    
+    # identify blemishes and low S/N pixels
+    for i in range(n_pixels):
+        # Identify blemishes (bad error flux values)
+        if (spec['eflux'][i] == -1.0) or (spec['eflux'][i] > 1):
+            spec['blemish'][i] = True
+            if (spec['v1'] <= spec['vel'][i] <= spec['v2']):
+                spec['flag_blemish'] = True
+        
+        # Identify low S/N pixels (S/N < 0.2, avoiding division by zero)
+        elif (abs(spec['flux'][i] / spec['eflux'][i]) < lowsn):
+            # Additional check for neighboring pixels to avoid false positives
+            sn_neighbors = []
+            for j in [i-1, i+1]:
+                if (0 <= j) & (j < n_pixels):
+                    sn_neighbors.append(abs(spec['flux'][j] / spec['eflux'][j]))
+            
+            # Only flag if this pixel and neighbors are not low S/N
+            if len(sn_neighbors) >= 1 and all(sn > lowsn for sn in sn_neighbors):
+                spec['lowSN'][i] = True
+                if (spec['v1'] <= spec['vel'][i] <= spec['v2']):
+                    spec['flag_blemish'] = True
+                    print(f'Low S/N pixel detected at {spec["vel"][i]:.2f} km/s')
+    
+    # apply corrections if requested
+    if blemish_correction:
+        bad_mask = spec['blemish'] | spec['lowSN']
+        
+        for i in range(n_pixels):
+            if bad_mask[i]:
+                # Determine interpolation window based on problem type
+                if spec['blemish'][i]:
+                    window_size = 20  # Larger window for blemishes
+                elif spec['lowSN'][i]:
+                    window_size = 5   # Smaller window for low S/N
+                
+                # Define interpolation range with bounds checking
+                i_start = max(0, i - window_size)
+                i_end = min(n_pixels, i + window_size + 1)
+                
+                # Get data in window
+                vel_window = spec['vel'][i_start:i_end]
+                flux_window = spec['flux'][i_start:i_end]
+                eflux_window = spec['eflux'][i_start:i_end]
+                
+                # Create mask for good pixels in window
+                good_mask = np.ones(len(vel_window), dtype=bool)
+                
+                # Exclude bad pixels
+                for j in range(len(vel_window)):
+                    global_idx = i_start + j
+                    if (flux_window[j] == 0.0 or 
+                        eflux_window[j] > 1 or 
+                        eflux_window[j] == -1.0 or
+                        bad_mask[global_idx]):
+                        good_mask[j] = False
+                
+                # Apply S/N cut for low S/N corrections
+                if not spec['blemish'][i]:  # Low S/N case
+                    sn_window = np.array(flux_window / eflux_window)
+                    good_mask = good_mask & (sn_window >= lowsn)
+                
+                # Extract good points
+                vel_good = vel_window[good_mask]
+                flux_good = flux_window[good_mask]
+                eflux_good = eflux_window[good_mask]
+                
+                # Check if we have enough points for interpolation
+                if len(vel_good) < 2:
+                    print(f'Warning: Insufficient good pixels for interpolation at index {i}')
                     continue
-                if (x[len(x)-1]<spec['vel'][i]):   # does not correct for blemishes on the edges, skips it
+                
+                # Check velocity coverage
+                if (spec['vel'][i] < vel_good.min() or 
+                    spec['vel'][i] > vel_good.max()):
+                    print(f'Warning: Target velocity outside interpolation range at index {i}')
                     continue
-                else:
-                    ff=interpolate.interp1d(x,y,fill_value='extrapolate')
-                    if (ff(spec['vel'][i])>=0):
-                        spec['flux'][i]=ff(spec['vel'][i])
-                    else:
-                        spec['flux'][i]=0.0
-                    spec['eflux'][i]=-0.9
+                
+                try:
+                    # Interpolate flux
+                    if len(np.unique(vel_good)) >= 2:  # Need unique velocities
+                        flux_interp = interpolate.interp1d(vel_good, flux_good,
+                                             fill_value='extrapolate')
+                        spec['corr_flux'][i] = flux_interp(spec['vel'][i])
+                        
+                        # For error: median of nearby good errors
+                        spec['corr_eflux'][i] = np.mean(eflux_good)
+                    
+                except Exception as e:
+                    print(f'Interpolation failed at index {i}: {e}')
+                    continue
+    integration_mask = (spec['vel'] >= spec['v1']) & (spec['vel'] <= spec['v2'])
+    blem_pixels = np.sum((spec['blemish'] | spec['lowSN']) & integration_mask)
+    tot_pixels = np.sum(integration_mask)
+    
+    if blemish_correction and blem_pixels > 0:
+        print(f'*** Corrected {blem_pixels} out of {tot_pixels} pixels in the integration range ***')
+        print(f'*** Blemishes: {np.sum(spec["blemish"] & integration_mask)}, '
+              f'Low S/N: {np.sum(spec["lowSN"] & integration_mask)} ***')
+    
     return spec
 
 def pyn_batch(spec_in,integration_limits = None,
