@@ -253,57 +253,50 @@ HELP =  '''
         of CGM/IGM/ISM absorption lines.
 
        Screen Layout:
-            LHS/RHS = Left Hand Side/Right Hand Side
+            LHS/C/RHS = Left Hand Side/Center/Right Hand Side
             LMB/RMB = Left Mouse Button/Right Mouse Button
             
             LHS shows raw spectrum with overlaid legendre poly for continuum fitting
             ---grayed regions indicate masked regions
-            
-            RHS shows normalized spectrum with velocity limits
+            C   shows normalized spectrum with velocity limits
+            RHS shows the Nav profile with velocity limits and corrected blemishes
+
         ------------------------------Mouse Clicks------------------------------------
 
-            
         Useful Mouse Clicks:
             
             LHS LMB     : Add wavelengths within region set by two clicks to continuum fit.
             LHS RMB     : Remove wavelengths from continuum fit.
-            RHS LMB     : Set lower velocity limit
-            RHS RMB     : Set upper velocity limit
-            
+            C   LMB     : Set lower velocity limit
+            C   RMB     : Set upper velocity limit
+            RHS LMB     : Mark contaminated wavelengths with two clicks.
+            RHS RMB     : Remove contaminated wavelengths.
+
         Useful Keystrokes:            
 
             v           : place mouse on desired subplot
                                    LHS: manually enter regions to mask continuum 
                                    RHS: manually enter EW intergration limits
             
-            V (RHS only): Use active subplot velocity limits for all RHS plots
+            V (C only)  : Use active subplot velocity limits for all plots
             
             Up arrow    : Increase Polynomial Order [default 4]
             Down arrow  : Decrease Polynomial Order [default 4]
 
-            m           : Measure EW/N for active subplot
-            M           : Measure EW/N for ALL subplots
+            N (C only)  : Measure EW/N for active subplot
             x/X         : Zoom in/out along x-axis
             y/Y         : Zoom in/out along y-axis
             [,]         : Move left and right in velocity on LHS
             w,s         : Move up and down in flux on LHS
             W,S         : Move up and down in flux on LHS by larger steps
-            1/2/0 (RHS only): flag absorber as
-                              (0) positive detection
-                              (1) upper limit 
-                              (2) lower limit
 
             t (RHS only): Cycle text printed on absorbers. Displays logN, or EW
             ------------------------------------------------------------------------------
-            Each tab displays up to 6 transitions. There are maximum 5 tabs allowed.
-            This limits the total number of transitions that can be simultaneously analyized to 30.
-
-
-
+            Each tab displays up to 6 transitions. 
  
 
             Written By: Sean Clark, Rongmon Bordoloi [2021]
-
+            Editted By: Saloni Deepak [2025]
                     '''
 
 # Autocontinuum
@@ -394,7 +387,7 @@ def compute_nav_profile(ion_data):
     spec['mask_cont'] = np.ones_like(vel)
     spec['contin_mask_bits'] = np.ones_like(vel)
 
-    spec = pyn_batch(spec, verbose=False, partial_pixels=True, blemish_correction=True)
+    spec = pyn_batch(spec, verbose=True, partial_pixels=True, blemish_correction=True)
     #spec = continuum_fit(spec, minord=spec['contin_order'], maxord=spec['contin_order'])
     if spec['flag_sat']:
         flag = -2
@@ -416,6 +409,8 @@ def plot_nav_panel(parent, key_idx, ii):
     vmin = ion_data['EWlims'][0]
     vmax = ion_data['EWlims'][1]
 
+    blemish = ion_data['blemish']
+    lowSN = ion_data['lowSN']
     ax = parent.axesN[parent.page][ii]
     ax.clear()
 
@@ -423,9 +418,11 @@ def plot_nav_panel(parent, key_idx, ii):
         ax.set_title('Na(v) Profile')
         ax.set_xlabel('Velocity (km/s)')
 
-    ax.step(nav_vel, nav, where='mid', color='purple')
-    ax.fill_between(nav_vel, nav - nav_err, nav + nav_err, color='violet', alpha=0.3)
+    ax.step(nav_vel, nav, where='mid', color='purple', zorder=1)
+    ax.fill_between(nav_vel, nav - nav_err, nav + nav_err, color='violet', alpha=0.3, zorder=1)
 
+    ax.scatter(nav_vel[blemish==True], nav[blemish==True],s=7, facecolor='r', edgecolor='k', zorder=2)
+    ax.scatter(nav_vel[lowSN==True], nav[lowSN==True],s=7, facecolor='r', edgecolor='r', zorder=3)
     ax.set_xlim(ion_data['window_lim_p'])
     ymax = np.nanmax(nav)
     ymin = -0.05 * ymax  # Pad slightly below zero
@@ -671,7 +668,6 @@ class mainWindow(QtWidgets.QTabWidget):
         self.status_label = QLabel(" ", self)
         self.status_label.setStyleSheet("color: white; font: 20pt;")
         self.bot_layout.addWidget(self.status_label)
-
         self.bot_layout.addItem(self.spacerItem)
         
         self.main_layout.addLayout(self.top_layout,stretch=1)
@@ -787,7 +783,8 @@ class mainWindow(QtWidgets.QTabWidget):
             self.ions[ion_key]['tau_array_err'] = nav_spec.get('tau_array_err')
             self.ions[ion_key]['fnorm_err'] = nav_spec.get('fnorm_err')
             self.ions[ion_key]['contin_err'] = nav_spec.get('contin_err')
-
+            self.ions[ion_key]['blemish'] = nav_spec.get('blemish')
+            self.ions[ion_key]['lowSN'] = nav_spec.get('lowSN')
             self.ions[ion_key]['integration_weights'] = nav_spec['integration_weights']
             self.ions[ion_key]['Nav'] = nav_spec['Nav']
             self.ions[ion_key]['Nav_err'] = nav_spec['Nav_err']
@@ -970,7 +967,7 @@ class mainWindow(QtWidgets.QTabWidget):
             self.old_page = self.page  # Store which page had the old axes
     
             self.status_label.setText(" ")
-
+     
 #----------------------key button events-----------------------------#            
     
     '''on press is used to reduce the order for the polyfit, toggle measurement displays, measure properties, and assist selecting EW vel bounds'''
@@ -1378,6 +1375,8 @@ class Plotting:
                 color='r',
                 where='mid'
             )
+
+            parent.axesR[parent.page][ii].axhline(y=0, xmin=window_lim[0], xmax=window_lim[1], ls='--', c='g')
             parent.axesR[parent.page][ii].axhline(y=1, xmin=window_lim[0], xmax=window_lim[1], ls='--', c='b')
 
             parent.axesL[parent.page][ii].set_yticks([])
@@ -1387,7 +1386,7 @@ class Plotting:
             parent.axesL[parent.page][ii].set_xlim(window_lim_p)
             parent.axesR[parent.page][ii].set_xlim(window_lim_p)
             parent.axesL[parent.page][ii].set_ylim(ylims)
-            parent.axesR[parent.page][ii].set_ylim([0, 2.2])
+            parent.axesR[parent.page][ii].set_ylim([-0.1, 2.2])
 
             # Show tick marks on all axes, but label only the bottom one
             for ax in [parent.axesL[parent.page][ii], parent.axesR[parent.page][ii]]:
@@ -1575,7 +1574,7 @@ class initialize:
         self.bot_layout.addItem(self.spacerItem)
         self.bot_layout.addWidget(self.PageLabel)
         self.bot_layout.addItem(self.spacerItem)
-                                   
+                    
         self.main_layout.addLayout(self.top_layout,stretch=1)
         self.main_layout.addWidget(parent.canvas[parent.page],stretch=14)
         self.main_layout.addLayout(self.bot_layout,stretch=1)
@@ -1603,8 +1602,6 @@ class initialize:
         parent.figs[parent.page].canvas.setFocusPolicy( QtCore.Qt.ClickFocus )
         parent.figs[parent.page].canvas.setFocus()            
         parent.figs[parent.page].canvas.mpl_connect('motion_notify_event', parent.onmotion)
-
-
 
 class HelpWindow(QtWidgets.QWidget):
 
