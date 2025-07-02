@@ -195,6 +195,22 @@ def read_line_list(label):
     return data
 
 c =  299792.458
+import os
+def available_lines(filepath='/Users/salonideepak/python/pynorm/pynorm/gui/lines_master.txt'):
+    lines = []
+    if not os.path.exists(filepath):
+        print(f"Linelist file not found: {filepath}")
+        return lines
+    with open(filepath, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                try:
+                    lines.append(float(line))
+                except ValueError:
+                    print(f"Skipping invalid line: {line}")
+    print(f"Loaded {len(lines)} rest-frame lines from {filepath}")
+    return lines
 
 class Absorber:
     
@@ -244,29 +260,45 @@ class Absorber:
             #for text
             ion_dict['EW_text'] = None
     
-    
-    def __init__(self,z,wave,flux,error,lines=None,mask_init=[-200,200],window_lim=[-1000,1000],load_file = False,nofrills=False):
-        mask = mask_init
-        self.z =z
+
+    def __init__(self, z, wave, flux, error, lines=None, mask_init=[-200, 200], window_lim=[-1000, 1000], load_file=False, nofrills=False):
+        
+        self.z = z
         self.ions = {}
+        mask = mask_init
 
         if lines:
+            # Safe-line filter: only keep lines that are covered by the spectrum
+            wmin, wmax = np.min(wave), np.max(wave)
+            safe_lines = []
             for line in lines:
-                line_dat = rb_setline(line,method='closest')
-                
-                #if using Transition class uncomment below line. Also comment transition def, while uncommenting transition class, comment out lines 80-82
-                #self.ions[line_dat['name']] =Transition(line_dat,wave,flux,error,self.z,mask_init,window_lim)
-        
-                self.ions[line_dat['name']] = {}
-                ion_dict = self.ions[line_dat['name']]
-                self.Transition(ion_dict,line_dat,wave,flux,error,z,mask,window_lim,nofrills=nofrills)
-                                
-            #last dictionary item for full spectra data                    
-            self.ions['Target'] = {}
-            self.ions['Target']['flux'] = flux
-            self.ions['Target']['wave'] = wave
-            self.ions['Target']['error'] = error
-            self.ions['Target']['z'] = z
+                obs_wave = line * (1 + z)
+                if wmin <= obs_wave <= wmax:
+                    safe_lines.append(line)
+
+            if not safe_lines:
+                print(f"\n WARNING: No lines covered by this spectrum at z = {z:.5f}!")
+                print(f"   Spectrum coverage: {wmin:.2f}–{wmax:.2f} Å")
+                print(f"   Original lines: {lines}")
+                print("   Safe lines: []\n")
+            else:
+                print(f"\n Using lines covered by this spectrum: {safe_lines}")
+
         else:
-            print('Input Linelist and rerun')
-            
+            print("No lines provided. Input a linelist and rerun.")
+            safe_lines = []
+
+        # Loop through only the valid lines
+        for line in safe_lines:
+            line_dat = rb_setline(line, method='closest')
+            self.ions[line_dat['name']] = {}
+            ion_dict = self.ions[line_dat['name']]
+
+            self.Transition(ion_dict, line_dat, wave, flux, error, z, mask, window_lim, nofrills=nofrills)
+
+         #last dictionary item for full spectra data                    
+        self.ions['Target'] = {}
+        self.ions['Target']['flux'] = flux
+        self.ions['Target']['wave'] = wave
+        self.ions['Target']['error'] = error
+        self.ions['Target']['z'] = z
