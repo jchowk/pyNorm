@@ -793,7 +793,8 @@ class mainWindow(QtWidgets.QTabWidget):
             self.ions[ion_key]['EW_err'] = nav_spec['EW_err']
             self.ions[ion_key]['N'] = nav_spec['ncol']
             self.ions[ion_key]['Nsig'] = nav_spec['ncol_err_hi']  # or average of hi/lo
-
+            self.ions[ion_key]['corr_flux'] = nav_spec['corr_flux']
+            self.ions[ion_key]['corr_eflux'] = nav_spec['corr_eflux']
             self.ions[ion_key]['ncol_pyn'] = nav_spec['ncol']
             self.ions[ion_key]['ncol_err_lo'] = nav_spec['ncol_err_lo']
             self.ions[ion_key]['ncol_err_hi'] = nav_spec['ncol_err_hi']
