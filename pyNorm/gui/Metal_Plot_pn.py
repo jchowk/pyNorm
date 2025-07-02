@@ -387,7 +387,7 @@ def compute_nav_profile(ion_data):
     spec['mask_cont'] = np.ones_like(vel)
     spec['contin_mask_bits'] = np.ones_like(vel)
 
-    spec = pyn_batch(spec, verbose=True, partial_pixels=True, blemish_correction=True)
+    spec = pyn_batch(spec, verbose=False, partial_pixels=True, blemish_correction=True)
     #spec = continuum_fit(spec, minord=spec['contin_order'], maxord=spec['contin_order'])
     if spec['flag_sat']:
         flag = -2

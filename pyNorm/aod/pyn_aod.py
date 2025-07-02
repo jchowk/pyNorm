@@ -160,7 +160,6 @@ def fix_zero(flux,eflux):
     x = np.linspace(a_param - eflux, eflux + 0.1, 500)
     pdf_values = truncated_normal_dist.pdf(x)
     exp_value = truncated_normal_dist.mean() # for a continuous and normalized = mean
-    print(exp_value)
     return exp_value
 
 def pyn_column(spec_in, integration_limits = None,
@@ -221,9 +220,18 @@ def pyn_column(spec_in, integration_limits = None,
     # Test for clearly saturated pixels:
     #   -- If the idx_saturation is already filled, use the results:
     try:
-        idx_saturation = ((flux <= 0.0) | (idx_saturation == True))
+        idx_saturation = (
+        ((flux_orig <= 0.0)
+         & (spec['blemish'] != True)
+         & (spec['lowSN'] != True))
+        | (idx_saturation == True)
+        )
     except:
-        idx_saturation = (flux <= 0.0)
+        idx_saturation = (
+        (flux_orig <= 0.0)
+         & (spec['blemish'] != True)
+         & (spec['lowSN'] != True))
+
 
     print("Number of saturated pixels:", len(idx_saturation[(idx_saturation==True)&(velocity>=integration_limits[0])&(velocity<=integration_limits[1])]))
         
