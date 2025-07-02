@@ -1,6 +1,8 @@
 import numpy as np
 from scipy import interpolate
 import matplotlib.pyplot as plt
+from scipy.stats import truncnorm
+
 # Assumptions:
 #
 #  -- Arrays are passed as velocity, flux
@@ -146,6 +148,20 @@ def integrate_column(velocity, flux, flux_err,
 
     return column, column_err_total, flag_sat
 
+def fix_zero(flux,eflux):
+    a_param = 0      # Lower bound of truncation
+    b_param = 1      # Upper bound of truncation
+    flux0= 0.0
+    truncated_normal_dist = truncnorm(
+                        (a_param - flux0) / eflux,
+                        (b_param - flux0) / eflux,
+                        loc=0,
+                        scale=eflux)
+    x = np.linspace(a_param - eflux, eflux + 0.1, 500)
+    pdf_values = truncated_normal_dist.pdf(x)
+    exp_value = truncated_normal_dist.mean() # for a continuous and normalized = mean
+    print(exp_value)
+    return exp_value
 
 def pyn_column(spec_in, integration_limits = None,
                 partial_pixels = True):
@@ -205,14 +221,15 @@ def pyn_column(spec_in, integration_limits = None,
     # Test for clearly saturated pixels:
     #   -- If the idx_saturation is already filled, use the results:
     try:
-        idx_saturation = ((flux_orig <= 0.0) | (idx_saturation == True))
+        idx_saturation = ((flux <= 0.0) | (idx_saturation == True))
     except:
-        idx_saturation = (flux_orig <= 0.0)
+        idx_saturation = (flux <= 0.0)
 
     print("Number of saturated pixels:", len(idx_saturation[(idx_saturation==True)&(velocity>=integration_limits[0])&(velocity<=integration_limits[1])]))
         
     # Fix saturation if it's present.
-    flux[idx_saturation] = np.abs(flux[idx_saturation])
+    flux[idx_saturation] = fix_zero(flux[idx_saturation],flux_err[idx_saturation])
+    #flux[idx_saturation] = abs(flux[idx_saturation])
     flux[(flux==0)] = 2.*flux_err[(flux==0)]
 
     # Set overall saturation flag for saturation in the integration range
@@ -228,7 +245,8 @@ def pyn_column(spec_in, integration_limits = None,
     bd = np.isnan(tau_array)
     tau_array[bd] = 0.
     tau_array_err[bd] = 0.
-
+    spec['tau_array'] = tau_array
+    spec['tau_array_err'] = tau_array_err
     # TODO: Include an AOD array in output w/continuum errors.
     # Integrate the apparent optical depth
     tau_int = np.sum(tau_array*delv*weights)
@@ -340,8 +358,10 @@ def pyn_eqwidth(spec_in,integration_limits = None,
     lightspeed = 2.998e5 # km/s
 
     velocity = spec['vel'].copy()
-    flux = spec['flux'].copy()
-    flux_err = spec['eflux'].copy()
+    flux = spec['corr_flux'].copy()
+    flux_orig = spec['flux'].copy()
+    flux_err = spec['corr_eflux'].copy()
+    eflux_orig = spec['flux'].copy()
     wavc=spec['wavc'].copy()
     fval=spec['fval'].copy()
 
@@ -671,8 +691,8 @@ def pyn_blemish(spec_in, blemish_correction):
     # Initialize arrays
     spec['blemish'] = np.zeros_like(spec['vel'], dtype=bool)
     spec['lowSN'] = np.zeros_like(spec['vel'], dtype=bool)
-    spec['corr_flux'] = spec['flux'].copy()  
-    spec['corr_eflux'] = spec['eflux'].copy()  
+    spec['corr_flux'] = spec['flux'].copy()
+    spec['corr_eflux'] = spec['eflux'].copy()
     spec['flag_blemish'] = False
     
     if blemish_correction:
@@ -696,7 +716,7 @@ def pyn_blemish(spec_in, blemish_correction):
                 if (0 <= j) & (j < n_pixels):
                     sn_neighbors.append(abs(spec['flux'][j] / spec['eflux'][j]))
             
-            # Only flag if this pixel and neighbors are not low S/N
+            # Only flag if the neighbors are not low S/N
             if len(sn_neighbors) >= 1 and all(sn > lowsn for sn in sn_neighbors):
                 spec['lowSN'][i] = True
                 if (spec['v1'] <= spec['vel'][i] <= spec['v2']):
