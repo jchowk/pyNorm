@@ -244,9 +244,9 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
         params_layout.addWidget(qtw.QLabel("Reliability Flag:"), 3, 0)
         self.reliability_combo = qtw.QComboBox()
         self.reliability_combo.addItems([
-            "1 - Multiple lines average", 
-            "2 - Using uncontaminated line(s)", 
-            "3 - Single line available"
+            "1 - Non-detection / Multiple lines", 
+            "2 - One detection consistent with UL", 
+            "3 - Single line / Several saturated"
         ])
         params_layout.addWidget(self.reliability_combo, 3, 1)
         params_layout.addWidget(qtw.QLabel("Redshift Error:"), 4, 0)
