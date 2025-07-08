@@ -9,7 +9,7 @@ import pickle
 import glob
 import os
 import sys
-from PyQt5.QtWidgets import QMessageBox, QApplication
+from PyQt5.QtWidgets import QMessageBox, QApplication, QDialog, QVBoxLayout, QLabel, QPushButton, QSizePolicy, QScrollArea, QWidget
 from PyQt5.QtWidgets import QTableWidgetItem
 import PyQt5.QtWidgets as qtw
 import PyQt5.QtCore as qtc
@@ -173,6 +173,11 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
         self.save_button.setEnabled(False)
         top_frame.addWidget(self.save_button)
         
+        self.stacked_plots_button = qtw.QPushButton("Stacked Plots")
+        self.stacked_plots_button.clicked.connect(self.show_stacked_plots)
+        self.stacked_plots_button.setEnabled(False)
+        top_frame.addWidget(self.stacked_plots_button)
+
         # Create splitter (equivalent to PanedWindow)
         splitter = qtw.QSplitter(qtc.Qt.Horizontal)
         main_layout.addWidget(splitter)
@@ -244,16 +249,19 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
             "3 - Single line available"
         ])
         params_layout.addWidget(self.reliability_combo, 3, 1)
-        
+        params_layout.addWidget(qtw.QLabel("Redshift Error:"), 4, 0)
+        self.z_err_label = qtw.QLabel("nan")
+        params_layout.addWidget(self.z_err_label, 4, 1)
+
         # Detection flag
-        params_layout.addWidget(qtw.QLabel("Detection Flag:"), 4, 0)
+        params_layout.addWidget(qtw.QLabel("Detection Flag:"), 5, 0)
         self.detection_combo = qtw.QComboBox()
         self.detection_combo.addItems([
             "0 - Detection", 
             "-1 - Upper limit/Non-detection", 
             "-2 - Lower limit/Saturation"
         ])
-        params_layout.addWidget(self.detection_combo, 4, 1)
+        params_layout.addWidget(self.detection_combo, 5, 1)
         
         controls_layout.addWidget(params_group)
         
@@ -280,11 +288,12 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
         
         # Create table widget
         self.summary_table = qtw.QTableWidget()
-        self.summary_table.setColumnCount(10)
+        self.summary_table.setColumnCount(11)
         self.summary_table.setHorizontalHeaderLabels([
-            "Redshift", "Ion", "va", "va_err", "N", "N_sig_lo", "N_sig_hi", 
+            "Redshift", "Ion", "va", "va_err", "z_err", "N", "N_sig_lo", "N_sig_hi", 
             "Corrected?", "Reliability", "Detection"
-        ])
+                ])
+
         
         # Set column widths
         header = self.summary_table.horizontalHeader()
@@ -306,6 +315,100 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
         
         # Set splitter proportions
         splitter.setSizes([900, 900])
+
+    def show_stacked_plots(self):
+        """Open the stacked plots dialog"""
+        if not self.spec_data:
+            qtw.QMessageBox.warning(self, "Warning", "No spectral data loaded. Please select a target first.")
+            return
+    
+        self.stacked_plots_dialog = StackedPlotsDialog(self)
+        self.stacked_plots_dialog.show()
+        self.save_stacked_plots()
+
+    def save_stacked_plots(self):
+        """Save all stacked plots to the target folder"""
+        if not self.spec_data:
+            return
+
+        try:
+        # Get target name and create filename-safe version
+            target_name = self.current_target
+            if not target_name:
+                target_name = "unknown_target"
+        
+        # Remove any characters that might be problematic in filenames
+            safe_target_name = "".join(c for c in target_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            safe_target_name = safe_target_name.replace(' ', '_')
+        
+        # Get redshift for filename and folder detection
+            redshift = getattr(self, 'current_redshift', 'unknown')
+        
+        # Determine the target folder using the same logic as load_data_files
+            target_folder = None
+        
+        # Method 1: Use current_file_path if available
+            if hasattr(self, 'current_file_path') and self.current_file_path:
+                target_folder = os.path.dirname(self.current_file_path)
+        
+        # Method 2: Search in the standard directory structure
+            if not target_folder or not os.path.exists(target_folder):
+                super_dirs = ["Metals_JMO13", "Metals_R11"]
+            
+                for super_dir in super_dirs:
+                    if os.path.exists(super_dir):
+                    # Look for the target directory pattern
+                        target_pattern = os.path.join(super_dir, "*", f"results_z_{redshift}")
+                        matching_dirs = glob.glob(target_pattern)
+                    
+                    # Also try with wildcards in case redshift format varies
+                        if not matching_dirs:
+                            target_pattern = os.path.join(super_dir, f"*{target_name}*", "results_z_*")
+                            matching_dirs = glob.glob(target_pattern)
+                        
+                        if matching_dirs:
+                            target_folder = matching_dirs[0]  # Use the first match
+                            break
+        
+        # Method 3: Fallback to current working directory
+            if not target_folder or not os.path.exists(target_folder):
+                target_folder = os.getcwd()
+                print(f"Warning: Could not find target-specific folder, saving to current directory: {target_folder}")
+        
+        # Create base filename
+            base_filename = f"{safe_target_name}_z{redshift}_stacked_plots"
+        
+        # Save plots for each tab
+            saved_files = []
+        
+        # Save All Transitions plot
+            if hasattr(self.stacked_plots_dialog, 'all_transitions_fig'):
+                filename = os.path.join(target_folder, f"{base_filename}_all_transitions.pdf")
+                self.stacked_plots_dialog.all_transitions_fig.savefig(filename, dpi=300, bbox_inches='tight')
+                saved_files.append(filename)
+        
+        # Save HI Transitions plot
+            if hasattr(self.stacked_plots_dialog, 'hi_transitions_fig'):
+                filename = os.path.join(target_folder, f"{base_filename}_hi_transitions.pdf")
+                self.stacked_plots_dialog.hi_transitions_fig.savefig(filename, dpi=300, bbox_inches='tight')
+                saved_files.append(filename)
+            
+        # Save Doublets plot
+            if hasattr(self.stacked_plots_dialog, 'doublets_fig'):
+                filename = os.path.join(target_folder, f"{base_filename}_doublets.pdf")
+                self.stacked_plots_dialog.doublets_fig.savefig(filename, dpi=300, bbox_inches='tight')
+                saved_files.append(filename)
+        
+            if saved_files:
+                print(f"Stacked plots saved to: {target_folder}")
+                for file in saved_files:
+                    print(f"  - {os.path.basename(file)}")
+            else:
+                print("No plots were saved (no figures found)")
+    
+        except Exception as e:
+            print(f"Error saving stacked plots: {e}")
+            qtw.QMessageBox.warning(self, "Warning", f"Failed to save plots: {str(e)}")
     
     def check_summary_file(self):
         """Check if summary file exists and load it"""
@@ -316,11 +419,12 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
                 self.display_summary_table()
             except Exception as e:
                 qtw.QMessageBox.warning(self, "Warning", f"Error loading summary file: {str(e)}")
-                self.summary = Table(names=['redshift', 'targname', 'ion', 'va','va_err','N', 'N_sig_lo', 'N_sig_hi', 'corrected_flag', 'reliability', 'detection'],
-                    dtype=[float, str, str, float, float, float, float, float, int, int, int])
+                self.summary = Table(names=['redshift', 'targname', 'ion', 'va','va_err', 'z_err', 'N', 'N_sig_lo', 'N_sig_hi', 'corrected_flag', 'reliability', 'detection'],
+                    dtype=[float, str, str, float, float, float, float, float, float, int, int, int])
+
         else:
-            self.summary = Table(names=['redshift', 'targname', 'ion', 'va','va_err','N', 'N_sig_lo', 'N_sig_hi', 'corrected_flag', 'reliability', 'detection'],
-                    dtype=[float, str, str, float, float, float, float, float, int, int, int])
+            self.summary = Table(names=['redshift', 'targname', 'ion', 'va','va_err', 'z_err', 'N', 'N_sig_lo', 'N_sig_hi', 'corrected_flag', 'reliability', 'detection'],
+                    dtype=[float, str, str, float, float, float, float, float, float, int, int, int])
     
     def load_data_files(self):
         """Load data files from standard directories"""
@@ -336,7 +440,7 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
                 if os.path.exists(super_dir):
                     pattern = os.path.join(super_dir, "*", "results_z_*", "*_Merged.pkl")
                     file_list.extend(glob.glob(pattern))
-                    
+
             if not file_list:
                 qtw.QMessageBox.warning(self, "Warning", "No data files found in Metals_JMO13 or Metals_R11")
                 return
@@ -393,14 +497,13 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
         
         # Enable appropriate buttons
             self.save_button.setEnabled(True)
-        
+            self.stacked_plots_button.setEnabled(True)
         # Now manually trigger the first selection
             if target_names:
                 self.target_dropdown.setCurrentIndex(0)
                 self.target_changed()  # Now call it manually when data is ready
         else:
             qtw.QMessageBox.warning(self, "Warning", "No valid data found in selected files")
-
 
     def debug_target_keys(self):
         """Debug method to print target keys and dropdown text"""
@@ -497,7 +600,10 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
             qtw.QApplication.restoreOverrideCursor()
     
     def ion_name(self, list_of_ions):
-        return [ion.partition(' ')[0] for ion in list_of_ions]
+        return ['NI' if ion.partition(' ')[0].startswith('NI') and
+         len(ion.partition(' ')[0]) > 2 and
+          len(ion.partition(' ')[0]) > 2 and (not(ion.partition(' ')[0].startswith('NII')))
+            else ion.partition(' ')[0] for ion in list_of_ions]
     
     def ion_changed(self):
         """Handle ion selection change"""
@@ -645,13 +751,25 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
             row_layout.addWidget(flag_edit)
 
             # Quality dropdown
+            # Analyst comment dropdown (separate from nav_flag or quality_flag)
             quality_combo = qtw.QComboBox()
             quality_combo.addItems(["0 - OK", "1 - Contaminated", "2 - Saturated"])
+
+            # Load any previously saved comment index; fallback to 0
             try:
-                quality_combo.setCurrentIndex(int(str(quality_flag).strip()[0]))
+                current_comment = int(str(ion_data.get('comment', '0')).strip()[0])
             except:
-                quality_combo.setCurrentIndex(0)
+                current_comment = 0
+
+            quality_combo.setCurrentIndex(current_comment)
             quality_combo.setMaximumWidth(120)
+
+            def on_quality_comment_changed(idx, tr=trans):
+                self.spec_data[tr]['comment'] = str(idx)
+                print(f"Updated comment for {tr} → {idx}")
+
+            quality_combo.currentIndexChanged.connect(on_quality_comment_changed)
+
             row_layout.addWidget(quality_combo)
             self.quality_vars[trans] = quality_combo
 
@@ -666,18 +784,28 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
 
             # Show "Correct" button if valid doublet partner exists
             show_correct = False
-            if nav_flag == -2 and np.isfinite(ncol) and ion_data.get("corrected_flag", 0) == 0:
+            if nav_flag in [-2, 0] and np.isfinite(ncol) and ion_data.get("corrected_flag", 0) == 0:
                 partners = self.find_valid_doublet_partners(trans, detected_ncols)
                 if partners:
-                # Check if current line is the weaker one (smaller f)
-                    try:
-                        f1 = float(ion_data['f'])
-                        f2 = float(partners[0][2]['f'])  # f of the matched partner
-                        if f1 < f2:  # show button only for weaker line
-                            show_correct = True
-                    except Exception:
-                        pass  # fallback: do not show button
+                    d2 = partners[0][2]
+                    f1 = float(ion_data['f'])
+                    f2 = float(d2['f'])
 
+                    flag1 = nav_flag
+                    flag2 = d2['nav_flag']
+
+
+        # Ensure one is saturated, one is good
+                    if (flag1 == -2 and flag2 == 0) or (flag1 == 0 and flag2 == -2):
+            # Show the button ONLY on the weaker unsaturated line
+                        if flag1 == 0 and f1 < f2:
+                            show_correct = True
+                            print("Show Correct button here (line is weak, flag 0)")
+                        elif flag2 == 0 and f2 < f1:
+                # Special case: you landed on the saturated line, but its partner is the weaker one
+                # so do NOT show the button here
+                            show_correct = False
+                            print("Skip button: this is strong line, partner is weak")
 
             if show_correct:
                 def make_correct_button(tr=trans, entry=ncol_edit):
@@ -711,22 +839,45 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
 
                         corrected_val, err_val = correct_saturation(logN, err_logN)
 
-                        # Update GUI and data
-                        entry.setReadOnly(False)
-                        entry.setText(f"{corrected_val:.2f}")
-                        entry.setReadOnly(True)
+        # Show popup with correction proposal
+                        original_val = self.spec_data[tr]['ncol_pyn']
+                        original_err_lo = self.spec_data[tr].get('ncol_err_lo', 0)
+                        original_err_hi = self.spec_data[tr].get('ncol_err_hi', 0)
+        
+                        msg = qtw.QMessageBox(self)
+                        msg.setWindowTitle("Saturation Correction")
+                        msg.setText(f"Correction calculated for {tr}:")
+                        msg.setDetailedText(f"""
+                Original value: {original_val:.2f} (+{original_err_hi:.2f}, -{original_err_lo:.2f})
+                Corrected value: {corrected_val:.2f} ± {err_val:.2f}
 
-                        self.spec_data[tr]['ncol_pyn'] = corrected_val
-                        self.spec_data[tr]['ncol_err_lo'] = err_val
-                        self.spec_data[tr]['ncol_err_hi'] = err_val
-                        self.spec_data[tr]['corrected_flag'] = 1
-
-                        self.update_column_density()
-                        self.update_plot()
-
-                        corrected_lbl = qtw.QLabel("Corrected!")
-                        corrected_lbl.setStyleSheet("color: green;")
-                        row_layout.addWidget(corrected_lbl)
+                Partner transition: {tr2}
+                Partner value: {nc2:.2f}
+                """)
+                        msg.setStandardButtons(qtw.QMessageBox.Yes | qtw.QMessageBox.No)
+                        msg.setDefaultButton(qtw.QMessageBox.Yes)
+        
+                        reply = msg.exec_()
+        
+                        if reply == qtw.QMessageBox.Yes:
+            # Store corrected values in separate fields - don't overwrite originals
+                            self.spec_data[tr]['ncol_corrected'] = corrected_val
+                            self.spec_data[tr]['ncol_corrected_err'] = err_val
+                            self.spec_data[tr]['corrected_flag'] = 1
+            
+            # Add corrected label
+                            corrected_lbl = qtw.QLabel(f"Corrected to {corrected_val:.2f}!")
+                            corrected_lbl.setStyleSheet("color: green; font-weight: bold;")
+                            row_layout.addWidget(corrected_lbl)
+            
+            # Update summary table and plot
+                            self.update_column_density()
+                            self.update_plot()
+            
+                            qtw.QMessageBox.information(self, "Success", 
+                                f"Correction applied to {tr}. Press Update Measurement.")
+                        else:
+                            qtw.QMessageBox.information(self, "Cancelled", "Correction cancelled.")
 
                     return correct_ncol
 
@@ -747,18 +898,31 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
         """Update the plot with current ion data based on selected lines"""
         self.plot_cache.clear()
         self.ax.clear()
-
-    # Plot only transitions that are selected
+    
+        # Plot only transitions that are selected
         for j, trans in enumerate(self.ion_list):
             if self.ions[j] == self.current_ion and trans in self.line_vars and self.line_vars[trans].isChecked():
-            # Check if we have cached data
+                # Check if we have cached data
                 if trans not in self.plot_cache:
                     ion_data = self.spec_data[trans]
+                
+                # Safeguard against missing keys
+                    if 'Nav' not in ion_data:
+                        print(f"Warning: 'Nav' key missing for {trans}, skipping...")
+                        continue
+                
+                    if 'vel' not in ion_data:
+                        print(f"Warning: 'vel' key missing for {trans}, skipping...")
+                        continue
+                
+                    if 'f' not in ion_data:
+                        print(f"Warning: 'f' key missing for {trans}, skipping...")
+                        continue
+                
                     v1, v2 = -100, 100  # Default values if EWlims missing
-
                     if 'EWlims' in ion_data and ion_data['EWlims'] is not None:
                         v1, v2 = ion_data['EWlims']
-
+                    
                     self.plot_cache[trans] = {
                         'vel': ion_data['vel'],
                         'Nav': ion_data['Nav'],
@@ -766,43 +930,46 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
                         'v1': v1,
                         'v2': v2,
                         'contamination_mask': ion_data.get('contamination_mask', None)
-                    }       
-
+                    }
+            
             # Use cached data
                 data = self.plot_cache[trans]
             
+            # Additional safeguard: check if Nav data is valid
+                if data['Nav'] is None or len(data['Nav']) == 0:
+                    print(f"Warning: Invalid Nav data for {trans}, skipping...")
+                    continue
+            
             # Plot the main Nav profile
                 self.ax.plot(data['vel'], data['Nav'], 
-                        drawstyle='steps-mid', label=f"{trans}, f={data['f']}",zorder=3)
+                        drawstyle='steps-mid', label=f"{trans}, f={data['f']}", zorder=3)
             
-                # Replace the complex contamination shading section with this:
-
-                # Add contamination shading if contamination_flag exists
+            # Replace the complex contamination shading section with this:
+            # Add contamination shading if contamination_flag exists
                 if data['contamination_mask'] is not None:
                     contamination_flag = np.array(data['contamination_mask'])
                     vel = np.array(data['vel'])
                     nav = np.array(data['Nav'])
-    
-    # Create a simple mask for contaminated regions
+
+                # Create a simple mask for contaminated regions
                     contaminated_mask = contamination_flag.astype(bool)
-    
+
                     if np.any(contaminated_mask):
-        # Simple fill_between for all contaminated points
-        # Set non-contaminated points to NaN so they don't get filled
+                        # Simple fill_between for all contaminated points
+                        # Set non-contaminated points to NaN so they don't get filled
                         nav_masked = nav.copy()
                         nav_masked[~contaminated_mask] = np.nan
-        
+            
                         self.ax.fill_between(vel, nav_masked, alpha=0.3, color='red',
                                         step='mid', zorder=2)
-                                
+                                    
             # Plot EW limit lines
                 self.ax.axvline(data['v1'], linestyle='--', color='black', zorder=4)
                 self.ax.axvline(data['v2'], linestyle='--', color='black', zorder=4)
-
+    
     # Compute mean va and va_err from selected transitions
         va_vals = []
         va_err_vals = []
-
         for trans in self.line_vars:
             if self.line_vars[trans].isChecked():
                 va = self.spec_data[trans].get('va')
@@ -810,26 +977,25 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
                 if va is not None and va_err is not None and np.isfinite(va) and np.isfinite(va_err):
                     va_vals.append(va)
                     va_err_vals.append(va_err)
-
+    
         if va_vals:
             va_mean = np.mean(va_vals)
             va_err_mean = np.sqrt(np.mean(np.square(va_err_vals)))  # quadrature mean
-
         # Plot mean va as vertical line
             self.ax.axvline(va_mean, linestyle='--', color='#4400AA', zorder=2, alpha=0.5)
             self.ax.axvspan(va_mean - va_err_mean, va_mean + va_err_mean, 
                            color='#4400AA', alpha=0.07, zorder=1)
-
+    
         self.ax.axhline(0, linestyle='--', color='k')
         self.ax.set_xlim(-500, 500)
         self.ax.set_xlabel('Velocity (km/s)')
         self.ax.set_ylabel('Na(v)')
         self.ax.set_title(f"{self.current_target}; z = {self.current_redshift}")
-
+    
     # Only add legend if there are items to show
         if len(self.ax.get_lines()) > 1:  # More than just the horizontal line
             self.ax.legend()
-
+    
         self.canvas.draw()
 
     def line_selection_changed(self, trans):
@@ -841,28 +1007,42 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
         self.update_plot()
 
     def update_column_density(self):
-        """Calculate and display column density based on selected lines"""
+        """Calculate and display column density, velocity, and redshift error based on selected lines"""
         N_values = []
         err_lo_values = []
         err_hi_values = []
 
+        va_vals = []
+        va_err_vals = []
+
         for trans, cb in self.line_vars.items():
             if cb.isChecked():
-                spec = self.spec_data[trans]
-                spec_to_use = spec
-                if trans in self.entry_widgets:
-                    spec_to_use = spec.copy()
-                    spec_to_use['ncol_pyn'] = self.entry_widgets[trans]['corrected_val']
-                    spec_to_use['ncol_err_lo'] = self.entry_widgets[trans]['corrected_err']
-                    spec_to_use['ncol_err_hi'] = self.entry_widgets[trans]['corrected_err']
+                spec = self.spec_data[trans].copy()
+                # Use corrected values if they exist
+                if spec.get('corrected_flag', 0) == 1:
+                    spec['ncol_pyn'] = spec['ncol_corrected']
+                    spec['ncol_err_lo'] = spec['ncol_corrected_err']
+                    spec['ncol_err_hi'] = spec['ncol_corrected_err']
+                elif trans in self.entry_widgets:
+                # Use entry widget values if no stored correction exists
+                    spec['ncol_pyn'] = self.entry_widgets[trans]['corrected_val']
+                    spec['ncol_err_lo'] = self.entry_widgets[trans]['corrected_err']
+                    spec['ncol_err_hi'] = self.entry_widgets[trans]['corrected_err']
 
-                N_ret = self.column_density(spec_to_use)
-
+                N_ret = self.column_density(spec)
                 if np.isfinite(N_ret[0]):
                     N_values.append(N_ret[0])
                     err_lo_values.append(N_ret[1])
                     err_hi_values.append(N_ret[2])
 
+            # Get velocity values
+                va = spec.get('va')
+                va_err = spec.get('va_err')
+                if va is not None and va_err is not None and np.isfinite(va) and np.isfinite(va_err):
+                    va_vals.append(va)
+                    va_err_vals.append(va_err)
+
+    # Compute average column density
         if N_values:
             if len(N_values) == 1:
                 N_col = N_values[0]
@@ -871,15 +1051,12 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
             else:
                 try:
                     if (np.any(np.isnan(err_hi_values)) or np.any(np.isnan(err_lo_values))):
-                    # Fallback to straight (unweighted) mean in linear space
-                        #print('Nan values found!')
                         linear_vals = 10 ** np.array(N_values)
                         mean_lin = np.mean(linear_vals)
                         N_col = np.log10(mean_lin)
                         N_sig_low = np.nan
                         N_sig_high = np.nan
                     else:
-                    # Use weighted logmean as usual
                         N_cal = logmean(np.array(N_values), np.array(err_hi_values), verbose=False)
                         N_col = N_cal[0]
                         N_sig_high = N_cal[1]
@@ -894,6 +1071,16 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
             self.n_value_label.setText("nan")
             self.n_err_low_label.setText("nan")
             self.n_err_high_label.setText("nan")
+
+    # Compute and display redshift error
+        if va_err_vals:
+            va_err_mean = np.sqrt(np.mean(np.square(va_err_vals)))  # quadrature mean
+            c_kms = 299792.458
+            z_err_mean = (va_err_mean / c_kms) * (1 + self.current_redshift)
+            self.z_err_label.setText(f"{z_err_mean:.6f}")
+        else:
+            self.z_err_label.setText("nan")
+
 
     def column_density(self, spec):
         """Calculate column density from spectrum data"""
@@ -971,21 +1158,13 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
 
         selected_trans = [tr for tr, cb in self.line_vars.items() if cb.isChecked()]
         corrected_flag = 0
-        logN = np.nan
-        err_lo = err_hi = np.nan
 
-        for tr in selected_trans:
-            if tr in self.entry_widgets:
-                logN = self.entry_widgets[tr]['corrected_val']
-                err_lo = err_hi = self.entry_widgets[tr]['corrected_err']
-                corrected_flag = 1
-                break  # Only take the first corrected one
+    # FIX: Check if ANY of the selected transitions have corrected values
+        has_corrected = any(self.spec_data[tr].get('corrected_flag', 0) == 1 for tr in selected_trans)
+        if has_corrected:
+            corrected_flag = 1
 
-        if not np.isfinite(logN) and selected_trans:
-            logN = self.spec_data[selected_trans[0]].get('ncol_pyn', np.nan)
-            err_lo = self.spec_data[selected_trans[0]].get('ncol_err_lo', np.nan)
-            err_hi = self.spec_data[selected_trans[0]].get('ncol_err_hi', np.nan)
-
+    # Calculate velocity averages (this part is correct)
         va_vals = []
         va_err_vals = []
         for trans in selected_trans:
@@ -1001,7 +1180,15 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
         else:
             va_mean = np.nan
             va_err_mean = np.nan
+    
+    # Calculate redshift error
+        if np.isfinite(va_err_mean):
+            c_kms = 299792.458
+            z_err_mean = (va_err_mean / c_kms) * (1 + self.current_redshift)
+        else:
+            z_err_mean = np.nan
 
+    # Get reliability and detection flags
         try:
             reliability = int(self.reliability_combo.currentText().split()[0])
             detection = int(self.detection_combo.currentText().split()[0])
@@ -1009,21 +1196,20 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
             reliability = 1
             detection = 0
 
+    # FIX: Consistent quality flag handling
         quality_vals = []
         for tr in selected_trans:
             qbox = self.quality_vars.get(tr)
             if qbox:
-                qval = qbox.currentText().split()[0]
-                quality_vals.append(qval)
+                qval = qbox.currentIndex()  # Get index directly instead of parsing text
+                quality_vals.append(str(qval))
+                # Store consistently in spec_data
                 self.spec_data[tr]['quality_flag'] = qval
+                self.spec_data[tr]['comment'] = str(qval)  # Keep both for backward compatibility
 
-        quality_flag = ";".join(quality_vals) if quality_vals else ""
+        quality_flag = ";".join(quality_vals) if quality_vals else "0"
 
-    # Set corrected_flag = 1 in spec_data
-        for tr in selected_trans:
-            if tr in self.entry_widgets:
-                self.spec_data[tr]['corrected_flag'] = 1
-
+    # Update or add to summary table
         key = (self.current_target, self.current_ion, self.current_redshift)
         found = False
         for i, row in enumerate(self.summary):
@@ -1033,6 +1219,7 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
                 self.summary[i]['N_sig_hi'] = N_sig_high
                 self.summary[i]['va'] = va_mean
                 self.summary[i]['va_err'] = va_err_mean
+                self.summary[i]['z_err'] = z_err_mean
                 self.summary[i]['reliability'] = reliability
                 self.summary[i]['detection'] = detection
                 self.summary[i]['corrected_flag'] = corrected_flag
@@ -1040,20 +1227,17 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
                 break
 
         if not found:
-            self.summary.add_row([
+            # Add new row
+            new_row = [
                 self.current_redshift, self.current_target, self.current_ion,
-                va_mean, va_err_mean, N_col, N_sig_low, N_sig_high,
+                va_mean, va_err_mean, z_err_mean, N_col, N_sig_low, N_sig_high,
                 corrected_flag, reliability, detection
-            ])
+            ]
+            self.summary.add_row(new_row)
 
-        self.update_summary_table_entry(self.current_redshift, self.current_target,
-                                    self.current_ion, va_mean, va_err_mean,
-                                    N_col, N_sig_low, N_sig_high,
-                                    corrected_flag, reliability, detection)
+    # Update the summary table display
         self.display_summary_table()
-
         QMessageBox.information(self, "Success", f"Measurement for {self.current_ion} updated")
-
 
     def next_ion(self):
         """Move to the next ion in the dropdown"""
@@ -1106,7 +1290,7 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
         # Restore cursor
             QApplication.restoreOverrideCursor()
 
-    def update_summary_table_entry(self, redshift, targ, ion, va, va_err, N_col, N_lo, N_hi, corr, rel, det):
+    def update_summary_table_entry(self, redshift, targ, ion, va, va_err, z_err, N_col, N_lo, N_hi, corr, rel, det):
         """Efficiently update one row of the summary table or insert it if new"""
         key = f"{targ}_{ion}_{redshift:.6f}"
         found = False
@@ -1126,12 +1310,13 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
                     self.summary_table.item(row, 2).setText(ion)
                     self.summary_table.item(row, 3).setText(f"{va:.3f}")
                     self.summary_table.item(row, 4).setText(f"{va_err:.3f}")
-                    self.summary_table.item(row, 5).setText(f"{N_col:.3f}")
-                    self.summary_table.item(row, 6).setText(f"{N_lo:.3f}")
-                    self.summary_table.item(row, 7).setText(f"{N_hi:.3f}")
-                    self.summary_table.item(row, 8).setText(str(corr))
-                    self.summary_table.item(row, 9).setText(str(rel))
-                    self.summary_table.item(row, 10).setText(str(det))
+                    self.summary_table.item(row, 5).setText(f"{z_err:.2f}")
+                    self.summary_table.item(row, 6).setText(f"{N_col:.3f}")
+                    self.summary_table.item(row, 7).setText(f"{N_lo:.3f}")
+                    self.summary_table.item(row, 8).setText(f"{N_hi:.3f}")
+                    self.summary_table.item(row, 9).setText(str(corr))
+                    self.summary_table.item(row, 10).setText(str(rel))
+                    self.summary_table.item(row, 11).setText(str(det))
                     found = True
                     break
 
@@ -1141,7 +1326,7 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
             self.summary_table.insertRow(row_position)
         
             items = [
-                f"{redshift:.6f}", targ, ion, f"{va:.3f}", f"{va:.3f}",
+                f"{redshift:.6f}", targ, ion, f"{va:.3f}", f"{va:.3f}", f"{z_err:.2f}",
                 f"{N_col:.3f}", f"{N_lo:.3f}", f"{N_hi:.3f}",
                 str(corr), str(rel), str(det)
             ]
@@ -1169,7 +1354,7 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
             items = [
                 f"{row['redshift']:.6f}",
                 row['ion'],f"{row['va']:.1f}",
-                f"{row['va_err']:.1f}",
+                f"{row['va_err']:.1f}",f"{row['z_err']:.2f}",
                 f"{row['N']:.3f}",
                 f"{row['N_sig_lo']:.3f}",
                 f"{row['N_sig_hi']:.3f}",
@@ -1181,6 +1366,392 @@ class SpectroscopicAnalysisGUI(qtw.QMainWindow):
             for col, text in enumerate(items):
                 item = QTableWidgetItem(text)
                 self.summary_table.setItem(row_position, col, item)
+import math
+class StackedPlotsDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.setWindowTitle("Stacked Ion Profiles")
+        self.setGeometry(100, 100, 1400, 900)
+        self.setModal(False)
+        # Create layout
+        layout = QVBoxLayout()
+        
+        # Create tab widget
+        self.tabs = qtw.QTabWidget()
+        
+        # Create tabs for different ion groups
+        self.create_hi_tab()
+        self.create_doublets_tab()
+        self.create_all_tab()
+        
+        layout.addWidget(self.tabs)
+        
+        # Close button
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.close)
+        layout.addWidget(close_btn)
+        
+        self.setLayout(layout)
+    
+    def create_all_tab(self):
+        """Create tab for all measured transitions (individual plots, not grouped)"""
+        tab = QWidget()
+        layout = QVBoxLayout()
+    
+    # Create scroll area for the plots
+        scroll_area = QScrollArea()
+        scroll_widget = QWidget()
+        scroll_layout = QVBoxLayout(scroll_widget)
+    
+    # Get all individual transitions (not grouped)
+        all_transitions = [trans for trans in self.parent.spec_data.keys() 
+                          if trans not in ["Target", "Sightline"]]
+    
+        if all_transitions:
+        # Create matplotlib figure with subplots
+            n_plots = len(all_transitions)
+            n_cols = 2
+            n_rows = math.ceil(n_plots / n_cols)
+        
+            fig, axes = plt.subplots(n_rows, n_cols, figsize=(10, 2 * n_rows))
+        
+        # Store figure reference for saving
+            self.all_transitions_fig = fig
+        
+        # Ensure axes is always a 2D array for consistent indexing
+            if n_rows == 1 and n_cols == 1:
+                axes = np.array([[axes]])
+            elif n_rows == 1:
+                axes = axes.reshape(1, -1)
+            elif n_cols == 1:
+                axes = axes.reshape(-1, 1)
+        
+        # Plot each transition individually
+            for i, trans in enumerate(all_transitions):
+                row = i // n_cols
+                col = i % n_cols
+                ax = axes[row, col]
+            
+            # Plot as single transition (not as a group)
+                self.plot_single_transition(ax, trans, plot_type='flux')
+                
+                # Only add x-axis label to bottom row
+                if row == n_rows - 1:
+                    ax.set_xlabel('Velocity (km/s)', fontsize=12)
+                else:
+                    ax.set_xlabel('')
+                    ax.tick_params(labelbottom=False)
+        
+        # Hide unused subplots
+            for i in range(n_plots, n_rows * n_cols):
+                row = i // n_cols
+                col = i % n_cols
+                ax = axes[row, col]
+                ax.set_visible(False)
+        
+            plt.tight_layout(pad=0.5, h_pad=0.0, w_pad=0.3)
+        
+        # Add to scroll area
+            canvas = FigureCanvas(fig)
+            scroll_layout.addWidget(canvas)
+        else:
+        # No transitions found
+            from PyQt5.QtWidgets import QLabel
+            label = QLabel("No transitions found")
+            scroll_layout.addWidget(label)
+    
+        scroll_area.setWidget(scroll_widget)
+        layout.addWidget(scroll_area)
+    
+        tab.setLayout(layout)
+        self.tabs.addTab(tab, "All Transitions")
+
+    def create_hi_tab(self):
+        """Create tab for HI transitions"""
+        tab = QWidget()
+        layout = QVBoxLayout()
+    
+    # Create scroll area for the plots
+        scroll_area = QScrollArea()
+        scroll_widget = QWidget()
+        scroll_layout = QVBoxLayout(scroll_widget)
+    
+    # Get HI transitions and filter out non-spectral data
+        hi_transitions_raw = self.get_transitions_for_ion("HI")
+        hi_transitions = [trans for trans in hi_transitions_raw if trans not in ["Target", "Sightline"]]
+    
+        if hi_transitions:
+        # Create matplotlib figure with subplots
+            n_plots = len(hi_transitions)
+            n_cols = 2
+            n_rows = math.ceil(n_plots / n_cols)
+        
+            fig, axes = plt.subplots(n_rows, n_cols, figsize=(10, 2 * n_rows))
+        
+        # Store figure reference for saving
+            self.hi_transitions_fig = fig
+        
+        # Ensure axes is always a 2D array for consistent indexing
+            if n_rows == 1 and n_cols == 1:
+                axes = np.array([[axes]])
+            elif n_rows == 1:
+                axes = axes.reshape(1, -1)
+            elif n_cols == 1:
+                axes = axes.reshape(-1, 1)
+        
+        # Plot each transition
+            for i, trans in enumerate(hi_transitions):
+                row = i // n_cols
+                col = i % n_cols
+                ax = axes[row, col]
+            
+                self.plot_single_transition(ax, trans, plot_type='flux')
+                
+                # Only add x-axis label to bottom row
+                if row == n_rows - 1:
+                    ax.set_xlabel('Velocity (km/s)', fontsize=12)
+                else:
+                    ax.set_xlabel('')
+                    ax.tick_params(labelbottom=False)
+        
+        # Hide unused subplots
+            for i in range(n_plots, n_rows * n_cols):
+                row = i // n_cols
+                col = i % n_cols
+                ax = axes[row, col]
+                ax.set_visible(False)
+        
+            plt.tight_layout(pad=0.5, h_pad=0.0, w_pad=0.3)
+        
+        # Add to scroll area
+            canvas = FigureCanvas(fig)
+            scroll_layout.addWidget(canvas)
+        else:
+            # No HI transitions found
+            from PyQt5.QtWidgets import QLabel
+            label = QLabel("No HI transitions found")
+            scroll_layout.addWidget(label)
+    
+        scroll_area.setWidget(scroll_widget)
+        layout.addWidget(scroll_area)
+    
+        tab.setLayout(layout)
+        self.tabs.addTab(tab, "HI Transitions")
+
+    def create_doublets_tab(self):
+        """Create tab for doublet transitions (grouped in same plot)"""
+        tab = QWidget()
+        layout = QVBoxLayout()
+    
+    # Create scroll area for the plots
+        scroll_area = QScrollArea()
+        scroll_widget = QWidget()
+        scroll_layout = QVBoxLayout(scroll_widget)
+    
+    # Get only the doublet groups (not singles)
+        doublet_pairs = {
+            'CIV': ['CIV 1548', 'CIV 1550'],
+            'SiIV': ['SiIV 1393', 'SiIV 1402'],
+            'OVI': ['OVI 1031', 'OVI 1037'],
+            'MgII': ['MgII 2796', 'MgII 2803'],
+            'NV': ['NV 1238', 'NV 1242'],
+            'AlIII': ['AlIII 1854', 'AlIII 1862'],
+            'OI+SiII': ['OI 1302', 'SiII 1304']  # User-defined doublet
+        }
+    
+    # Get all available transitions
+        all_transitions = [trans for trans in self.parent.spec_data.keys() 
+                          if trans not in ["Target", "Sightline"]]
+    
+    # Get only doublet groups where at least one line is available
+        doublet_groups = []
+        for doublet_name, pair in doublet_pairs.items():
+            available_pair = [trans for trans in pair if trans in all_transitions]
+            if len(available_pair) >= 1:  # At least one line available
+                doublet_groups.append(available_pair)
+    
+        if doublet_groups:
+            # Create matplotlib figure with subplots
+            n_plots = len(doublet_groups)
+            n_cols = 2
+            n_rows = math.ceil(n_plots / n_cols)
+        
+            fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 3 * n_rows))
+            #fig.suptitle(f"Doublet Transitions - {self.parent.current_target}, z = {self.parent.current_redshift}", fontsize=14)
+        
+        # Store figure reference for saving
+            self.doublets_fig = fig
+        
+        # Ensure axes is always a 2D array for consistent indexing
+            if n_rows == 1 and n_cols == 1:
+                axes = np.array([[axes]])
+            elif n_rows == 1:
+                axes = axes.reshape(1, -1)
+            elif n_cols == 1:
+                axes = axes.reshape(-1, 1)
+        
+        # Plot each doublet group
+            for i, doublet_group in enumerate(doublet_groups):
+                row = i // n_cols
+                col = i % n_cols
+                ax = axes[row, col]
+            
+            # Plot the doublet group (both lines in same plot)
+                self.plot_single_transition(ax, doublet_group, plot_type='Nav')
+                
+                # Only add x-axis label to bottom row
+                if row == n_rows - 1:
+                    ax.set_xlabel('Velocity (km/s)', fontsize=12)
+                else:
+                    ax.set_xlabel('')
+                    ax.tick_params(labelbottom=False)
+        
+        # Hide unused subplots
+            for i in range(n_plots, n_rows * n_cols):
+                row = i // n_cols
+                col = i % n_cols
+                ax = axes[row, col]
+                ax.set_visible(False)
+        
+            plt.tight_layout(pad=0.5, h_pad=0.0, w_pad=0.3)
+        
+        # Add to scroll area
+            canvas = FigureCanvas(fig)
+            scroll_layout.addWidget(canvas)
+        else:
+        # No doublet transitions found
+            from PyQt5.QtWidgets import QLabel
+            label = QLabel("No doublet transitions found")
+            scroll_layout.addWidget(label)
+    
+        scroll_area.setWidget(scroll_widget)
+        layout.addWidget(scroll_area)
+    
+        tab.setLayout(layout)
+        self.tabs.addTab(tab, "Doublets")
+    
+    def get_transitions_for_ion(self, ion_name):
+        """Get all transitions for a specific ion"""
+        transitions = []
+        for j, trans in enumerate(self.parent.ion_list):
+            if self.parent.ions[j] == ion_name and trans in self.parent.spec_data:
+                transitions.append(trans)
+        return transitions
+
+    def plot_single_transition(self, ax, trans, plot_type='Nav'):
+        """Plot a single transition in the given axes
+    
+        Parameters:
+        -----------
+        ax : matplotlib axes object
+        trans : str or list
+            Single transition name or list of transitions (for doublets)
+        plot_type : str
+            'Nav' for Nav profile or 'flux' for normalized flux
+        """
+        # Check if ax is a valid matplotlib axes object
+        if not hasattr(ax, 'plot'):
+            print(f"Error: ax is not a matplotlib axes object. Type: {type(ax)}")
+            return
+    
+    # Handle both single transitions and doublet lists
+        if isinstance(trans, list):
+            # Multiple transitions (doublets)
+            transitions = trans
+        else:
+            # Single transition
+            transitions = [trans]
+    
+        plotted_any = False
+        legend_entries = []
+    
+        for trans_name in transitions:
+            if trans_name not in self.parent.spec_data:
+                continue
+        
+            ion_data = self.parent.spec_data[trans_name]
+        
+            # Add debug check to ensure ion_data is a dictionary
+            if not isinstance(ion_data, dict):
+                continue
+        
+        # Get plot data, handling potential missing keys
+            vel = ion_data.get('vel')
+            if plot_type == 'Nav':
+                y_data = ion_data.get('Nav')
+                y_label = 'Na(v)'
+            else:  # plot_type == 'flux'
+                y_data = ion_data.get('flux')
+                y_label = 'Normalized Flux'
+        
+            f_val = ion_data.get('f')
+        
+            if vel is None or y_data is None or f_val is None:
+                continue
+        
+        # Convert to numpy arrays for safety
+            vel = np.array(vel)
+            y_data = np.array(y_data)
+        
+        # Plot the main profile
+            if len(transitions) == 1:
+                # Single transition
+                line, = ax.plot(vel, y_data, drawstyle='steps-mid', color='k', linewidth=1)
+                legend_entries.append((line, f"{trans_name}, f={f_val:.3f}"))
+            else:
+                # Multiple transitions - use different colors
+                colors = ['black', 'red', 'green', 'orange', 'purple', 'brown']
+                color = colors[transitions.index(trans_name) % len(colors)]
+                line, = ax.plot(vel, y_data, drawstyle='steps-mid', color=color, linewidth=1)
+                legend_entries.append((line, f"{trans_name}, f={f_val:.3f}"))
+        
+        # Add contamination shading if available
+            contamination_mask = ion_data.get('contamination_mask')
+            if contamination_mask is not None:
+                contamination_flag = np.array(contamination_mask)
+                contaminated_mask = contamination_flag.astype(bool)
+            
+                if np.any(contaminated_mask):
+                    y_masked = y_data.copy()
+                    y_masked[~contaminated_mask] = np.nan
+                    ax.fill_between(vel, y_masked, alpha=0.3, color='red', step='mid')
+        
+        # Add EW limits if available
+            if 'EWlims' in ion_data and ion_data['EWlims'] is not None:
+                v1, v2 = ion_data['EWlims']
+                ax.axvline(v1, linestyle='--', color='b', alpha=0.7, linewidth=2)
+                ax.axvline(v2, linestyle='--', color='b', alpha=0.7, linewidth=2)
+        
+        # Add va line if available
+            va = ion_data.get('va')
+            if va is not None and np.isfinite(va):
+                ax.axvline(va, linestyle='--', color='purple', alpha=0.7, linewidth=2)
+        
+            plotted_any = True
+    
+        if not plotted_any:
+            ax.text(0.5, 0.5, f"No data available", transform=ax.transAxes, 
+                   ha='center', va='center')
+    
+    # Formatting
+        if plot_type == 'Nav':
+            ax.axhline(0, linestyle='--', color='g', alpha=0.5, linewidth=1)
+        else:  # flux
+            ax.axhline(1, linestyle='--', color='g', alpha=0.5, linewidth=1)
+        if plot_type == 'flux':
+            ax.axhline(0, linestyle='--', color='g', alpha=0.5, linewidth=1)
+        
+        ax.set_xlim(-500, 500)
+        ax.set_ylabel(y_label, fontsize=12)
+    
+        ax.tick_params(labelsize=8)
+        ax.grid(True, alpha=0.3)
+    
+    # Add legend with ion names and f-values
+        if legend_entries:
+            lines, labels = zip(*legend_entries)
+            ax.legend(lines, labels, fontsize=10, loc='upper right')
 
 if __name__ == "__main__":
     import sys
