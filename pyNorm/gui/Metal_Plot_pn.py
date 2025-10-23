@@ -248,35 +248,43 @@ clr=rb_set_color()
 
 HELP =  '''
         ---------------------------------------------------------------------------
-        This is an interactive 1D absorption line measurement toolbox.
-        This allows for interactive continuum fitting and equivalent width measurement 
-        of CGM/IGM/ISM absorption lines.
+        pyNorm interactive 1D absorption line measurement toolbox.
+        This allows for interactive continuum fitting and equivalent width measurement of CGM/IGM/ISM absorption lines. [Based on rb_codes written by Rongmon Bordoloi.]
 
-       Screen Layout:
+        ---------------------
+        Screen Layout:
+        ---------------------
             LHS/RHS = Left Hand Side/Right Hand Side
-            LMB/RMB = Left Mouse Button/Right Mouse Button
             
-            LHS shows raw spectrum with overlaid legendre poly for continuum fitting
-            ---grayed regions indicate masked regions
+            LHS shows spectrum with overlaid legendre polynomial continuum estimate; grayed regions indicate masked regions.
             
             RHS shows normalized spectrum with velocity limits
-        ------------------------------Mouse Clicks------------------------------------
+
+        ---------------------    
+        Mouse button Layout:
+        ---------------------
+            LMB/RMB = Left Mouse Button/Right Mouse Button
 
             
+        ---------------------
         Useful Mouse Clicks:
+        ---------------------
+        *LHS:
+            LMB     : Remove wavelengths from continuum fit (click left/right).
+            RMB     : Add wavelengths to continuum fit (click left/right).
+        *RHS
+            LMB     : Set lower velocity limit
+            RMB     : Set upper velocity limit
             
-            LHS LMB     : Add wavelengths within region set by two clicks to continuum fit.
-            LHS RMB     : Remove wavelengths from continuum fit.
-            RHS LMB     : Set lower velocity limit
-            RHS RMB     : Set upper velocity limit
-            
+        ---------------------
         Useful Keystrokes:            
+        ---------------------
 
             v           : place mouse on desired subplot
                                    LHS: manually enter regions to mask continuum 
                                    RHS: manually enter EW intergration limits
             
-            V (RHS only): Use active subplot velocity limits for all RHS plots
+            V (RHS only): Use active subplot velocity limits for all lines
             
             Up arrow    : Increase Polynomial Order [default 4]
             Down arrow  : Decrease Polynomial Order [default 4]
@@ -288,6 +296,7 @@ HELP =  '''
             [,]         : Move left and right in velocity on LHS
             w,s         : Move up and down in flux on LHS
             W,S         : Move up and down in flux on LHS by larger steps
+
             1/2/0 (RHS only): flag absorber as
                               (0) positive detection
                               (1) upper limit 
@@ -297,16 +306,8 @@ HELP =  '''
             
             Q           : Exit the GUI (close all windows)
             ------------------------------------------------------------------------------
-            Each tab displays up to 6 transitions. There are maximum 5 tabs allowed.
-            This limits the total number of transitions that can be simultaneously analyized to 30.
-
-
-
- 
-
-            Written By: Sean Clark, Rongmon Bordoloi [2021]
-
-                    '''
+            Each tab displays up to 6 transitions. There are maximum 5 tabs allowed. This limits the total number of transitions that can be simultaneously analyzed to 30.
+            '''
 
 # Autocontinuum
 
@@ -1630,8 +1631,21 @@ class HelpWindow(QtWidgets.QWidget):
 
     def __init__(self,parent=None):
         super(HelpWindow, self).__init__(parent)
-        self.resize(400,500)
-        label = QtWidgets.QLabel(HELP,self)
+        self.setWindowTitle("PyNorm GUI Help")
+        self.resize(600, 700)
+        
+        # Create layout
+        layout = QtWidgets.QVBoxLayout(self)
+        
+        # Use QTextBrowser for better text rendering with wrapping and scrolling
+        text_browser = QtWidgets.QTextBrowser(self)
+        text_browser.setMarkdown(False)  # Use plain text mode
+        text_browser.setText(HELP)
+        text_browser.setReadOnly(True)
+        text_browser.setStyleSheet("QTextBrowser { font-family: monospace; font-size: 10pt; }")
+        
+        layout.addWidget(text_browser)
+        self.setLayout(layout)
         
 class SavePage(QtWidgets.QWidget):
     def __init__(self,parentvals,parent=None):
