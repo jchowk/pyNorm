@@ -141,7 +141,7 @@ def compute_EW(lam,flx,wrest,lmts,flx_err,plot=False,**kwargs):
 
 
 
-    print('W_lambda = ' + np.str('%.3f' % ew_tot) + ' +/- ' + np.str('%.3f' % err_ew_tot)  +'  \AA   over [' + np.str('%.1f' % np.round(lmts[0]))+' to ' +np.str('%.1f' % np.round(lmts[1])) + ']  km/s')
+    print('W_lambda = ' + str('%.3f' % ew_tot) + ' +/- ' + str('%.3f' % err_ew_tot)  +'  \AA   over [' + str('%.1f' % np.round(lmts[0]))+' to ' +str('%.1f' % np.round(lmts[1])) + ']  km/s')
     output={}
     output["ew_tot"]=ew_tot
     output["err_ew_tot"]=err_ew_tot
@@ -166,7 +166,7 @@ def compute_EW(lam,flx,wrest,lmts,flx_err,plot=False,**kwargs):
         nerr = (tauerr/((2.654e-15)*f0*lambda_r))*del_vel_j; 
         col = np.sum(n[pix]);
         colerr = np.sum((nerr[pix])**2.)**0.5; 
-        print('Direct N = ' + np.str('%.3f' % np.log10(col))  +' +/- ' + np.str('%.3f' % (np.log10(col+colerr) - np.log10(col))) + ' cm^-2')
+        print('Direct N = ' + str('%.3f' % np.log10(col))  +' +/- ' + str('%.3f' % (np.log10(col+colerr) - np.log10(col))) + ' cm^-2')
         output["col"]=col
         output["colerr"]=colerr
         output["Tau_a"]=Tau_a
@@ -185,7 +185,7 @@ def compute_EW(lam,flx,wrest,lmts,flx_err,plot=False,**kwargs):
         ax1.plot([-2500,2500],[1,1],'k:')       
         plt.plot([lmts[0],lmts[0]],[1.5,1.5],'r+',markersize=15)        
         plt.plot([lmts[1],lmts[1]],[1.5,1.5],'r+',markersize=15)    
-        plt.title(r' $W_{rest}$= ' + np.str('%.3f' % ew_tot) + ' $\pm$ ' + np.str('%.3f' % err_ew_tot) + ' $\AA$')
+        plt.title(r' $W_{rest}$= ' + str('%.3f' % ew_tot) + ' $\pm$ ' + str('%.3f' % err_ew_tot) + ' $\AA$')
         ax1.set_xlabel('vel [km/s]')
     
         ax2=fig.add_subplot(212)
@@ -525,9 +525,9 @@ def plot_intervening_lines(ax,outlist,delv):
                     color =clr['pale_red']
                 else:
                     color='b'
-                ax.text(vellist[index],1.05, np.str(outlist['ion'][index])+' '+ np.str('%.0f' % outlist['wrest'][index]),
+                ax.text(vellist[index],1.05, str(outlist['ion'][index])+' '+ str('%.0f' % outlist['wrest'][index]),
                     fontsize=8,rotation=90, rotation_mode='anchor',color=color)
-                ax.text(vellist[index]+50.,1.05, 'z = '+np.str('%.3f' % outlist['zobs'][index]),
+                ax.text(vellist[index]+50.,1.05, 'z = '+str('%.3f' % outlist['zobs'][index]),
                     fontsize=8,rotation=90, rotation_mode='anchor',color=color)
 
 
@@ -1419,7 +1419,7 @@ class Plotting:
             parent.axesR[parent.page][ii].text(
                 0.8,
                 0.85,
-                r'$\log(f\lambda):\,$' + np.str('%.2f' % (np.log10(fvals * lam_0))),
+                r'$\log(f\lambda):\,$' + str('%.2f' % (np.log10(fvals * lam_0))),
                 transform=parent.axesR[parent.page][ii].transAxes,
                 color=clr['teal']
             )
@@ -1487,9 +1487,9 @@ class plotText:
         ew = line.get('EW')
         ew_err = line.get('EW_err')  #  pyn_batch
 
-        EW_det_text = np.str('%.0f' % ew) + ' $\pm$ ' + np.str('%.0f' % ew_err) + ' m$\AA$'
+        EW_det_text = str('%.0f' % ew) + ' $\pm$ ' + str('%.0f' % ew_err) + ' m$\AA$'
         EW_limit_text = "<{:.0f} m$\AA$".format(2. * ew_err)  # upper limit
-        logN_det_text= np.str('%.2f' % np.log10(line['N'])) +' $\pm$ ' + np.str('%.3f' % (np.log10(line['N']+line['Nsig']) - np.log10(line['N']))) + ' /cm$^2$'
+        logN_det_text= str('%.2f' % np.log10(line['N'])) +' $\pm$ ' + str('%.3f' % (np.log10(line['N']+line['Nsig']) - np.log10(line['N']))) + ' /cm$^2$'
 
         #line.flag is the line specific upper/lower/detections
         #pflag is the toggle button for which to show
