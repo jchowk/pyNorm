@@ -15,7 +15,6 @@ flux; wave; error; linelist; redshift; bin
 '''
 import numpy as np
 import numpy.polynomial.legendre as L
-from statistics import mean
 import numpy as np
 from astropy.io import ascii
 from pkg_resources import resource_filename
@@ -221,7 +220,7 @@ class Absorber:
             window = (ion_dict['vel']>window_lim[0]) & (ion_dict['vel']<window_lim[1])
             ion_dict['flux'] = flux[window]; ion_dict['wave']=wave[window]
             ion_dict['error'] = error[window]; ion_dict['vel'] = ion_dict['vel'][window]
-            min_flux = max(min(ion_dict['flux']),0.25*mean(ion_dict['flux'])); max_flux= min(max(ion_dict['flux']),2*mean(ion_dict['flux']))
+            min_flux = max(min(ion_dict['flux']),0.25*np.mean(ion_dict['flux'])); max_flux= min(max(ion_dict['flux']),2*np.mean(ion_dict['flux']))
             #ion_dict['y_lim'] = [min(ion_dict['flux']),max(ion_dict['flux'])]
             ion_dict['y_lim'] = [min_flux,max_flux]
             '''Initial Polyfit assuming a masked region of -200:200 and polyorder=4
