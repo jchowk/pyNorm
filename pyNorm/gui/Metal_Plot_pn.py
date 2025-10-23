@@ -1441,7 +1441,11 @@ class Plotting:
 
         if Print:
             if parent.ions[parent.keys[key_idx]]['EW_text'] is not None:
-                parent.ions[parent.keys[key_idx]]['EW_text'].remove()
+                try:
+                    parent.ions[parent.keys[key_idx]]['EW_text'].remove()
+                except (NotImplementedError, ValueError, AttributeError):
+                    # Text artist might not be removable or already removed
+                    pass
 
             plotText(parent, parent.ions[parent.keys[key_idx]])
             text = parent.ions[parent.keys[key_idx]]['text']
