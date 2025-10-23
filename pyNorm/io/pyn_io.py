@@ -14,8 +14,8 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True, bl
     import numpy as np
     from collections import OrderedDict
     from scipy.io import readsav
-    from pynorm.aod import pyn_batch
-    from pynorm.continuum import continuum_fit
+    from pyNorm.aod import pyn_batch
+    from pyNorm.continuum import continuum_fit
     import pickle
     from astropy.coordinates import SkyCoord
 
