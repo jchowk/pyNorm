@@ -714,6 +714,21 @@ class mainWindow(QtWidgets.QTabWidget):
 #         self.PageLabel = QtWidgets.QLabel("Page: " + str(self.currentIndex()+1)+"/"+str(len(self.figs)),self)
 #         self.PageLabel.setStyleSheet("font: 16pt;color: black;background-color:white")
 #         self.PageLabel.setGeometry(630,850,200,30)
+
+    def closeEvent(self, event):
+        """Handle window close event gracefully."""
+        try:
+            # Close all matplotlib figures
+            import matplotlib.pyplot as plt
+            for fig in self.figs:
+                try:
+                    plt.close(fig)
+                except:
+                    pass
+        except:
+            pass
+        # Accept the close event
+        event.accept()
         
     def apply_zoom_from_combo(self):
         selected = self.zoom_combo.currentText()
@@ -1191,8 +1206,15 @@ class mainWindow(QtWidgets.QTabWidget):
                     self.figs[self.page].canvas.draw()
 
         if event.key == 'Q':  # Quit/exit the GUI
-            import matplotlib.pyplot as plt
-            plt.close('all')
+            # Close all matplotlib figures and the Qt window
+            for fig in self.figs:
+                try:
+                    import matplotlib.pyplot as plt
+                    plt.close(fig)
+                except:
+                    pass
+            # Close the main window
+            self.close()
 
 
 #------------------------------click button events----------------------------#        
@@ -1659,7 +1681,7 @@ class HelpWindow(QtWidgets.QWidget):
         text_browser = QtWidgets.QTextBrowser(self)
         text_browser.setPlainText(HELP)  # Use plain text mode
         text_browser.setReadOnly(True)
-        text_browser.setStyleSheet("QTextBrowser { font-family: monospace; font-size: 10pt; }")
+        text_browser.setStyleSheet("QTextBrowser { font-family: monospace; font-size: 14pt; }")
         
         layout.addWidget(text_browser)
         self.setLayout(layout)
