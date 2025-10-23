@@ -166,7 +166,11 @@ def compute_EW(lam,flx,wrest,lmts,flx_err,plot=False,**kwargs):
         nerr = (tauerr/((2.654e-15)*f0*lambda_r))*del_vel_j; 
         col = np.sum(n[pix]);
         colerr = np.sum((nerr[pix])**2.)**0.5; 
-        print('Direct N = ' + str('%.3f' % np.log10(col))  +' +/- ' + str('%.3f' % (np.log10(col+colerr) - np.log10(col))) + ' cm^-2')
+        # Only print column density if it's positive (valid for log)
+        if col > 0:
+            print('Direct N = ' + str('%.3f' % np.log10(col))  +' +/- ' + str('%.3f' % (np.log10(col+colerr) - np.log10(col))) + ' cm^-2')
+        else:
+            print('Direct N = invalid (col = {:.3e})'.format(col))
         output["col"]=col
         output["colerr"]=colerr
         output["Tau_a"]=Tau_a
@@ -1200,6 +1204,10 @@ class mainWindow(QtWidgets.QTabWidget):
                 vel = self.ions[self.keys[key_idx]]['vel']
                 name = self.ions[self.keys[key_idx]]['name']
 
+                # Only proceed if click was within the plot area (event.xdata/ydata are not None)
+                if event.xdata is None or event.ydata is None:
+                    return
+
                 if self.vclim is None:
                     self.vclim = [event.xdata]
                     self.axesL[self.page][self.Lidx].plot(event.xdata, event.ydata, 'ro', ms=5)
@@ -1499,18 +1507,28 @@ class plotText:
         ew_err = line.get('EW_err')  #  pyn_batch
 
         # Handle None or missing values
-        if ew is None or ew_err is None:
-            EW_det_text = "N/A"
-            EW_limit_text = "N/A"
-            logN_det_text = "N/A"
-        elif ew is None:
+        if ew is not None and ew_err is not None:
+            # Both values exist - show full measurement
+            EW_det_text = str('%.0f' % ew) + ' $\pm$ ' + str('%.0f' % ew_err) + ' m$\AA$'
+            EW_limit_text = "<{:.0f} m$\AA$".format(2. * ew_err)  # upper limit
+            # Only compute logN if N values exist and are positive
+            if 'N' in line and line['N'] is not None and line['N'] > 0:
+                try:
+                    logN_det_text= str('%.2f' % np.log10(line['N'])) +' $\pm$ ' + str('%.3f' % (np.log10(line['N']+line['Nsig']) - np.log10(line['N']))) + ' /cm$^2$'
+                except (ValueError, TypeError):
+                    logN_det_text = "N/A"
+            else:
+                logN_det_text = "N/A"
+        elif ew_err is not None:
+            # Only upper limit available
             EW_det_text = "N/A"
             EW_limit_text = "<{:.0f} m$\AA$".format(2. * ew_err)  # upper limit
             logN_det_text = "N/A"            
         else:
-            EW_det_text = str('%.0f' % ew) + ' $\pm$ ' + str('%.0f' % ew_err) + ' m$\AA$'
-            EW_limit_text = "<{:.0f} m$\AA$".format(2. * ew_err)  # upper limit
-            logN_det_text= str('%.2f' % np.log10(line['N'])) +' $\pm$ ' + str('%.3f' % (np.log10(line['N']+line['Nsig']) - np.log10(line['N']))) + ' /cm$^2$'
+            # No valid measurements
+            EW_det_text = "N/A"
+            EW_limit_text = "N/A"
+            logN_det_text = "N/A"
 
         #line.flag is the line specific upper/lower/detections
         #pflag is the toggle button for which to show
@@ -1631,7 +1649,7 @@ class HelpWindow(QtWidgets.QWidget):
 
     def __init__(self,parent=None):
         super(HelpWindow, self).__init__(parent)
-        self.setWindowTitle("PyNorm GUI Help")
+        self.setWindowTitle("pyNorm GUI Help")
         self.resize(600, 700)
         
         # Create layout
