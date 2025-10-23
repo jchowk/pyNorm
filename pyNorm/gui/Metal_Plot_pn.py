@@ -1657,8 +1657,7 @@ class HelpWindow(QtWidgets.QWidget):
         
         # Use QTextBrowser for better text rendering with wrapping and scrolling
         text_browser = QtWidgets.QTextBrowser(self)
-        text_browser.setMarkdown(False)  # Use plain text mode
-        text_browser.setText(HELP)
+        text_browser.setPlainText(HELP)  # Use plain text mode
         text_browser.setReadOnly(True)
         text_browser.setStyleSheet("QTextBrowser { font-family: monospace; font-size: 10pt; }")
         
