@@ -294,6 +294,8 @@ HELP =  '''
                               (2) lower limit
 
             t (RHS only): Cycle text printed on absorbers. Displays logN, or EW
+            
+            Q           : Exit the GUI (close all windows)
             ------------------------------------------------------------------------------
             Each tab displays up to 6 transitions. There are maximum 5 tabs allowed.
             This limits the total number of transitions that can be simultaneously analyized to 30.
