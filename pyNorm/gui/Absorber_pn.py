@@ -115,7 +115,7 @@ def read_line_list(label):
     
 
     if label=='atom':
-        filename=resource_filename('pynorm.gui','lines/atom_full.dat')
+        filename=resource_filename('pyNorm.gui','lines/atom_full.dat')
 
 
     data = []
