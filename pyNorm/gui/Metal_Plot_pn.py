@@ -1183,6 +1183,10 @@ class mainWindow(QtWidgets.QTabWidget):
                     self.axesN[self.page][self.Ridx].set_ylim(ion['nav_ylim_init'])
                     self.figs[self.page].canvas.draw()
 
+        if event.key == 'Q':  # Quit/exit the GUI
+            import matplotlib.pyplot as plt
+            plt.close('all')
+
 
 #------------------------------click button events----------------------------#        
     def onclick(self, event):
