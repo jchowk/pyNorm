@@ -319,6 +319,7 @@ def read_inorm(input_filename, partial_pixels=True, blemish_correction=True):
     spec['ncol_err_lo'] = spec_in['ncole1']
     spec['ncol_err_hi'] = spec_in['ncole2']
     spec['flag_sat'] = False
+    spec['flag_blemish'] = False    
     #
     spec['va'] = spec_in['va']
     spec['va_err'] = spec_in['vaerr']
