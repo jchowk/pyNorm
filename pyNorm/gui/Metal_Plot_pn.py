@@ -26,8 +26,8 @@ import traceback
 from PyQt5.QtWidgets import QMessageBox
 from . import Absorber_pn
 from matplotlib.axes import Axes
-from pynorm.aod import pyn_batch
-from pynorm.continuum import continuum_fit
+from pyNorm.aod import pyn_batch
+from pyNorm.continuum import continuum_fit
 
 rcParams['lines.linewidth'] = .9
 

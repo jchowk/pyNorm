@@ -4,5 +4,5 @@ with open(pfile,'rb') as pklfile:
     absys=pickle.load(pklfile)
 
 #Run the Master GUI
-from pynorm.gui import Metal_Plot_pn as M   
+from pyNorm.gui import Metal_Plot_pn as M   
 M.Transitions(absys)

@@ -1,6 +1,6 @@
 from astropy.io import fits
-from pynorm.gui import Absorber_pn as A
-from pynorm.gui import Metal_Plot_pn as M   
+from pyNorm.gui import Absorber_pn as A
+from pyNorm.gui import Metal_Plot_pn as M   
 from linetools.spectra.xspectrum1d import XSpectrum1D
 
 # Read in the 1D spectrum to be analyzed
