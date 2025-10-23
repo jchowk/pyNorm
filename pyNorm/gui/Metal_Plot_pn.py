@@ -1487,9 +1487,19 @@ class plotText:
         ew = line.get('EW')
         ew_err = line.get('EW_err')  #  pyn_batch
 
-        EW_det_text = str('%.0f' % ew) + ' $\pm$ ' + str('%.0f' % ew_err) + ' m$\AA$'
-        EW_limit_text = "<{:.0f} m$\AA$".format(2. * ew_err)  # upper limit
-        logN_det_text= str('%.2f' % np.log10(line['N'])) +' $\pm$ ' + str('%.3f' % (np.log10(line['N']+line['Nsig']) - np.log10(line['N']))) + ' /cm$^2$'
+        # Handle None or missing values
+        if ew is None or ew_err is None:
+            EW_det_text = "N/A"
+            EW_limit_text = "N/A"
+            logN_det_text = "N/A"
+        elif ew is None:
+            EW_det_text = "N/A"
+            EW_limit_text = "<{:.0f} m$\AA$".format(2. * ew_err)  # upper limit
+            logN_det_text = "N/A"            
+        else:
+            EW_det_text = str('%.0f' % ew) + ' $\pm$ ' + str('%.0f' % ew_err) + ' m$\AA$'
+            EW_limit_text = "<{:.0f} m$\AA$".format(2. * ew_err)  # upper limit
+            logN_det_text= str('%.2f' % np.log10(line['N'])) +' $\pm$ ' + str('%.3f' % (np.log10(line['N']+line['Nsig']) - np.log10(line['N']))) + ' /cm$^2$'
 
         #line.flag is the line specific upper/lower/detections
         #pflag is the toggle button for which to show
