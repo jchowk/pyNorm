@@ -6,12 +6,12 @@ authors = ["Chris Howk <jchowk@gmail.com>"]
 license = "GPL-3.0"
 
 [tool.poetry.dependencies]
-python = "^3.9"
-astropy = "^5.2"
-numpy = "^1.21"
-matplotlib = "^3"
-scipy = "^1.7"
-linetools = "^0"
+python = ">=3.9,<3.14"
+astropy = ">=5.2,<8.0"
+numpy = ">=1.23,<3.0"
+matplotlib = ">3"
+scipy = ">=1.7"
+linetools = ">=0"
 
 [tool.poetry.dev-dependencies]
 
