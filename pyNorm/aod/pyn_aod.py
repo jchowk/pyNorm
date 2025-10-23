@@ -647,6 +647,7 @@ def pyn_istat(spec_in,integration_limits = None,
 # to turn off blemish_correction set it to False in both pyn_batch and read_rbcodes
 def pyn_blemish(spec_in,blemish_correction):
     spec = spec_in.copy()
+
     if blemish_correction:
         print('***** Will correct for blemishes, if present. *****')
     for i in range(len(spec['vel'])):
@@ -677,6 +678,11 @@ def pyn_batch(spec_in,integration_limits = None,
                 verbose = True):
 
     spec = spec_in.copy()
+
+    # In case the flags don't exist, set them to the defaults. 
+    spec.setdefault('flag_blemish', False)
+    spec.setdefault('flag_sat', False)
+    spec.setdefault('detection_3sig', False)
 
     # FIX NON-WRITEABLE ARRAYS due to discontiguous
     # memory in some readsav inputs
@@ -715,10 +721,10 @@ def pyn_batch(spec_in,integration_limits = None,
 
         print('\n'+dashes)
         # Print column densities:
-        if spec['flag_blemish']:
+        if spec.get('flag_blemish'):
             print('***** WARNING: BLEMISHES PRESENT IN THE INTEGRATION RANGE! *****')
 
-        if spec['flag_sat']:
+        if spec.get('flag_sat'):
             print('***** WARNING: SATURATION IS PRESENT! *****')
             print(dashes)
             print('log N > {0:0.3f} ({1:+0.3f}, {2:+0.3f})'.format(\
