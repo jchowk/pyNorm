@@ -1,0 +1,16 @@
+Updated: Saloni Deepak						May 30, 2025
+New code added.
+
+To run rb_codes+pynorm GUI:
+|___: Absorber_pn.py  
+    : Metal_Plot_pn.py
+    : lines/
+    : run.py - Example usage.
+    : load.py - Example usage. 
+
+To run GUI to inspect multiple transitions and ions for an absorber generating aCloudy ready summary file:            
+|___: spec_analysis_gui.py *
+    : merge_instruments.py - Code that merges pickle files for HIRES and UVES (customize as needed) and creates master pickle file, Nav profile plots for all ions and a measurement table (.csv).
+
+
+* NOTE: This code reads master pickle files generated from the rb_codes+pynorm GUI. If multiple instruments are used, the individual instrument pickle files need to be merged. Running this code involves correcting paths to these pickle files. Ideally these will look into a directory and search for master pickle files for all absorbers in the sub-directories.

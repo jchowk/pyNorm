@@ -329,9 +329,9 @@ def continuum_autofit(spec_in,
     # Cut the spectrum in sub-sections to check regions to be masked.
     # This should help when flux changes by a large amount over the considered
     # velocity interval.
-    diffv = (vl2-vl1)/vclip1
-    diffv1  = vl1
-    diffv2   = vl1 + diffv
+    # diffv = (vl2-vl1)/vclip1
+    # diffv1  = vl1
+    # diffv2   = vl1 + diffv
 
 
 

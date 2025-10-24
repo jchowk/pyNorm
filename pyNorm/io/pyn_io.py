@@ -189,7 +189,7 @@ def read_inorm(input_filename, partial_pixels=True, blemish_correction=True):
     import numpy as np
     from collections import OrderedDict
     from scipy.io import readsav
-    from pyNorm.aod import pyn_batch
+    from pynorm.aod import pyn_batch
 
     # Read the save file:
     spec_in = readsav(input_filename)
