@@ -251,88 +251,93 @@ def rb_set_color():
 clr=rb_set_color()
 
 HELP =  '''
-        -----------------------------------------------------------
-        pyNorm interactive 1D absorption line measurement toolbox.
+   -------------------------------------------------
+   pyNorm interactive 1D absorption line measurement 
+   toolbox.
 
-        This GUI allows for interactive continuum fitting and
-        equivalent width measurement of CGM/IGM/ISM absorption
-        lines. [Based on rb_codes written by Rongmon Bordoloi.]
+   This GUI allows for interactive continuum fitting 
+   and equivalent width measurement of CGM/IGM/ISM 
+   absorption lines. 
+   
+   [Based on rb_codes written by Rongmon Bordoloi.]
 
-        ---------------------
-        Screen Layout:
-        ---------------------
-            LHS/RHS = Left Hand Side/Right Hand Side
-            
-            LHS shows spectrum with overlaid legendre polynomial
-            continuum estimate; grayed regions indicate masked
-            regions.
-            
-            RHS shows normalized spectrum with velocity limits
+   ---------------------
+   Screen Layout:
+   ---------------------
+       LHS/RHS = Left Hand Side/Right Hand Side
+       
+       LHS shows spectrum with overlaid legendre 
+       polynomial continuum estimate; grayed regions 
+       indicate masked regions.
+       
+       RHS shows normalized spectrum with velocity 
+       limits.
 
-        ---------------------    
-        Mouse button Layout:
-        ---------------------
-            LMB/RMB = Left Mouse Button/Right Mouse Button
+   ---------------------    
+   Mouse button Layout:
+   ---------------------
+       LMB/RMB = Left Mouse Button/Right Mouse Button
 
-            
-        ---------------------
-        Useful Mouse Clicks:
-        ---------------------
-        *LHS:
-            LMB : Remove wavelengths from continuum fit 
-                  (click left/right).
-            RMB : Add wavelengths to continuum fit 
-                  (click left/right).
-        *RHS:
-            LMB : Set lower velocity limit
-            RMB : Set upper velocity limit
-            
-        ---------------------
-        Useful Keystrokes:            
-        ---------------------
+       
+   ---------------------
+   Useful Mouse Clicks:
+   ---------------------
+   *LHS:
+       LMB : Remove wavelengths from continuum fit 
+             (click left/right).
+       RMB : Add wavelengths to continuum fit 
+             (click left/right).
+   *RHS:
+       LMB : Set lower velocity limit
+       RMB : Set upper velocity limit
+       
+   ---------------------
+   Useful Keystrokes:            
+   ---------------------
 
-            v  : place mouse on desired subplot
-                  LHS: enter regions to mask continuum 
-                  RHS: enter EW integration limits
-            
-                   (RHS only)
-            
-            m   : Measure EW/N for active subplot
-            M   : Measure EW/N for ALL subplots
-            x/X : Zoom in/out along x-axis
-            y/Y : Zoom in/out along y-axis
-            [,] : Move left and right in velocity on LHS
-            w,s : Move up and down in flux on LHS
-            W,S : Move up and down in flux on LHS by larger steps
+       v  : place mouse on desired subplot
+             LHS: enter regions to mask continuum 
+             RHS: enter EW integration limits
+       
+              (RHS only)
+       
+       m   : Measure EW/N for active subplot
+       M   : Measure EW/N for ALL subplots
+       x/X : Zoom in/out along x-axis
+       y/Y : Zoom in/out along y-axis
+       [,] : Move left and right in velocity on LHS
+       w,s : Move up and down in flux on LHS
+       W,S : Move up and down in flux on LHS by larger steps
 
-            Up arrow    : Increase Polynomial Order [default 4]
-            Down arrow  : Decrease Polynomial Order [default 4]
+       Up arrow    : Increase Polynomial Order [default 4]
+       Down arrow  : Decrease Polynomial Order [default 4]
 
-            ---------------------
-            * RHS Only: 
-            ---------------------
-             
-             V : Use active subplot velocity limits for all lines
-             t : Cycle text printed on absorbers. Displays logN, or EW
+       ---------------------
+       * RHS Only: 
+       ---------------------
+        
+        V : Use active subplot velocity limits for all lines
+        t : Cycle printed measurements. Displays logN, or EW
 
-             1/2/0 : flag absorber as
-                              (0) positive detection
-                              (1) upper limit 
-                              (2) lower limit
-            ---------------------
-            * Quitting: 
-            ---------------------
-            Q : Exit the GUI (close all windows)
+        1/2/0 : flag absorber as
+                         (0) positive detection
+                         (1) upper limit 
+                         (2) lower limit
+       ---------------------
+       * Help & Quitting: 
+       ---------------------
+       ?   : Open this help window
+       Q   : Exit the GUI (close all windows)
 
 
-        -----------------------------------------------------------
+   -----------------------------------------------------
 
-        Each tab displays up to 6 transitions. 
+   Each tab displays up to 6 transitions. 
 
-        There are maximum 5 tabs allowed, limiting the total 
-        number of transitions that can be simultaneously 
-        analyzed to 30.
-            '''
+   There are maximum 5 tabs allowed, limiting the total 
+   number of transitions that can be simultaneously 
+   analyzed to 30.
+       '''
 
 # Autocontinuum
 
@@ -628,6 +633,9 @@ class mainWindow(QtWidgets.QTabWidget):
         self.ylims = []
         self.vclim = None
         self.vclim_contam = None
+        self.Lidx = None  # Index of left panel subplot
+        self.Ridx = None  # Index of right panel subplot
+        self.Nidx = None  # Index of Na(v) panel subplot
 
         self.vclim_all = []
         self.name = None
@@ -723,6 +731,9 @@ class mainWindow(QtWidgets.QTabWidget):
         self.cid2 = self.figs[0].canvas.mpl_connect("key_press_event", self.onpress)
         self.cid3 = self.figs[0].canvas.mpl_connect("motion_notify_event",self.onmotion)
         
+        # Connect tab change signal (do this once, not repeatedly in getPage)
+        self.currentChanged.connect(self.getPage)
+        
 #----------------Setup for Additional pages-----------#  
         AddPage(self)
 
@@ -784,7 +795,6 @@ class mainWindow(QtWidgets.QTabWidget):
     def getPage(self):
         self.page = self.currentIndex()
         self.PageLabel.setText("Page: " + str(self.page+1)+"/"+str(len(self.figs)))
-        self.currentChanged.connect(lambda: getPage(self))
             
 #-------------------Add Ion Button------------------------------# 
     def NewTransition(self,parent):
@@ -1018,6 +1028,10 @@ class mainWindow(QtWidgets.QTabWidget):
     
     '''on press is used to reduce the order for the polyfit, toggle measurement displays, measure properties, and assist selecting EW vel bounds'''
     def onpress(self,event):
+        if event.key == '?':  # Open help window
+            self.opensub(self)
+            return
+        
         if event.key == 'v':
             if self.old_axes in self.axesL[self.page]:
                 mask_reg,ok = QInputDialog.getText(self,'Manual Mask Limits','Input Region to Mask (e.g. 200,250)')
@@ -1719,7 +1733,8 @@ class HelpWindow(QtWidgets.QWidget):
         text_browser.setPlainText(HELP)  # Use plain text mode
         text_browser.setReadOnly(True)
         text_browser.setWordWrapMode(QtGui.QTextOption.WordWrap)  # Wrap text at word boundaries
-        text_browser.setStyleSheet("QTextBrowser { font-family: monospace; font-size: 14pt; }")
+        # Use fallback fonts for better cross-platform compatibility
+        text_browser.setStyleSheet("QTextBrowser { font-family: 'Courier New', 'Consolas', 'Monaco', 'DejaVu Sans Mono'; font-size: 14pt; }")
         
         layout.addWidget(text_browser)
         self.setLayout(layout)
