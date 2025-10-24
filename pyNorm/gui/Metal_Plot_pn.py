@@ -251,16 +251,21 @@ def rb_set_color():
 clr=rb_set_color()
 
 HELP =  '''
-        ---------------------------------------------------------------------------
+        -----------------------------------------------------------
         pyNorm interactive 1D absorption line measurement toolbox.
-        This allows for interactive continuum fitting and equivalent width measurement of CGM/IGM/ISM absorption lines. [Based on rb_codes written by Rongmon Bordoloi.]
+
+        This GUI allows for interactive continuum fitting and
+        equivalent width measurement of CGM/IGM/ISM absorption
+        lines. [Based on rb_codes written by Rongmon Bordoloi.]
 
         ---------------------
         Screen Layout:
         ---------------------
             LHS/RHS = Left Hand Side/Right Hand Side
             
-            LHS shows spectrum with overlaid legendre polynomial continuum estimate; grayed regions indicate masked regions.
+            LHS shows spectrum with overlaid legendre polynomial
+            continuum estimate; grayed regions indicate masked
+            regions.
             
             RHS shows normalized spectrum with velocity limits
 
@@ -274,43 +279,59 @@ HELP =  '''
         Useful Mouse Clicks:
         ---------------------
         *LHS:
-            LMB     : Remove wavelengths from continuum fit (click left/right).
-            RMB     : Add wavelengths to continuum fit (click left/right).
-        *RHS
-            LMB     : Set lower velocity limit
-            RMB     : Set upper velocity limit
+            LMB : Remove wavelengths from continuum fit 
+                  (click left/right).
+            RMB : Add wavelengths to continuum fit 
+                  (click left/right).
+        *RHS:
+            LMB : Set lower velocity limit
+            RMB : Set upper velocity limit
             
         ---------------------
         Useful Keystrokes:            
         ---------------------
 
-            v           : place mouse on desired subplot
-                                   LHS: manually enter regions to mask continuum 
-                                   RHS: manually enter EW intergration limits
+            v  : place mouse on desired subplot
+                  LHS: enter regions to mask continuum 
+                  RHS: enter EW integration limits
             
-            V (RHS only): Use active subplot velocity limits for all lines
+                   (RHS only)
             
+            m   : Measure EW/N for active subplot
+            M   : Measure EW/N for ALL subplots
+            x/X : Zoom in/out along x-axis
+            y/Y : Zoom in/out along y-axis
+            [,] : Move left and right in velocity on LHS
+            w,s : Move up and down in flux on LHS
+            W,S : Move up and down in flux on LHS by larger steps
+
             Up arrow    : Increase Polynomial Order [default 4]
             Down arrow  : Decrease Polynomial Order [default 4]
 
-            m           : Measure EW/N for active subplot
-            M           : Measure EW/N for ALL subplots
-            x/X         : Zoom in/out along x-axis
-            y/Y         : Zoom in/out along y-axis
-            [,]         : Move left and right in velocity on LHS
-            w,s         : Move up and down in flux on LHS
-            W,S         : Move up and down in flux on LHS by larger steps
+            ---------------------
+            * RHS Only: 
+            ---------------------
+             
+             V : Use active subplot velocity limits for all lines
+             t : Cycle text printed on absorbers. Displays logN, or EW
 
-            1/2/0 (RHS only): flag absorber as
+             1/2/0 : flag absorber as
                               (0) positive detection
                               (1) upper limit 
                               (2) lower limit
+            ---------------------
+            * Quitting: 
+            ---------------------
+            Q : Exit the GUI (close all windows)
 
-            t (RHS only): Cycle text printed on absorbers. Displays logN, or EW
-            
-            Q           : Exit the GUI (close all windows)
-            ------------------------------------------------------------------------------
-            Each tab displays up to 6 transitions. There are maximum 5 tabs allowed. This limits the total number of transitions that can be simultaneously analyzed to 30.
+
+        -----------------------------------------------------------
+
+        Each tab displays up to 6 transitions. 
+
+        There are maximum 5 tabs allowed, limiting the total 
+        number of transitions that can be simultaneously 
+        analyzed to 30.
             '''
 
 # Autocontinuum
@@ -1206,15 +1227,31 @@ class mainWindow(QtWidgets.QTabWidget):
                     self.figs[self.page].canvas.draw()
 
         if event.key == 'Q':  # Quit/exit the GUI
-            # Close all matplotlib figures and the Qt window
-            for fig in self.figs:
-                try:
-                    import matplotlib.pyplot as plt
-                    plt.close(fig)
-                except:
-                    pass
-            # Close the main window
-            self.close()
+            try:
+                import matplotlib.pyplot as plt
+                
+                # Close help window if it's open
+                if hasattr(self, 'sub') and self.sub is not None:
+                    try:
+                        self.sub.close()
+                        self.sub = None  # Clear reference
+                    except:
+                        pass
+                
+                # Disconnect and close all matplotlib figures
+                for fig in self.figs:
+                    try:
+                        # Disconnect all event handlers
+                        fig.canvas.mpl_disconnect('all')
+                        plt.close(fig)
+                    except:
+                        pass
+                
+                # Close the main window
+                self.close()
+            except:
+                # If anything goes wrong, just close the window
+                self.close()
 
 
 #------------------------------click button events----------------------------#        
@@ -1526,7 +1563,7 @@ class EW:
 class plotText:
     def __init__(self,parent,line):
         ew = line.get('EW')
-        ew_err = line.get('EW_err')  #  pyn_batch
+        ew_err = line.get('EWsig')  # EWsig is the error field used by EW class
 
         # Handle None or missing values
         if ew is not None and ew_err is not None:
@@ -1681,6 +1718,7 @@ class HelpWindow(QtWidgets.QWidget):
         text_browser = QtWidgets.QTextBrowser(self)
         text_browser.setPlainText(HELP)  # Use plain text mode
         text_browser.setReadOnly(True)
+        text_browser.setWordWrapMode(QtGui.QTextOption.WordWrap)  # Wrap text at word boundaries
         text_browser.setStyleSheet("QTextBrowser { font-family: monospace; font-size: 14pt; }")
         
         layout.addWidget(text_browser)
