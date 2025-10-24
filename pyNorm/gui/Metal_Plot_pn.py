@@ -250,94 +250,200 @@ def rb_set_color():
 
 clr=rb_set_color()
 
-HELP =  '''
-   -------------------------------------------------
-   pyNorm interactive 1D absorption line measurement 
-   toolbox.
+HELP = """
+<html>
+<head>
+    <style>
+        body { font-family: 'Courier New', monospace; line-height: 1.0; margin: 5px; }
+        h2 { margin: 5px 0; }
+        p { margin: 5px 0; }
+        ul { margin: 5px 0; padding-left: 20px; }
+        li { margin: 2px 0; }
+        table { border-collapse: collapse; margin: 5px 0; }
+        th, td { border: 1px solid; padding: 4px 6px; text-align: left; }
+        th { font-weight: bold; }
+        .section { margin: 8px 0 3px 0; font-weight: bold; }
+        .subsection { margin: 6px 0 3px 0; font-weight: bold; }
+    </style>
+</head>
+<body>
 
-   This GUI allows for interactive continuum fitting 
-   and equivalent width measurement of CGM/IGM/ISM 
-   absorption lines. 
-   
-   [Based on rb_codes written by Rongmon Bordoloi.]
+<h2>pynorm Interactive 1D Absorption Line Measurement Toolbox</h2>
 
-   ---------------------
-   Screen Layout:
-   ---------------------
-       LHS/RHS = Left Hand Side/Right Hand Side
-       
-       LHS shows spectrum with overlaid legendre 
-       polynomial continuum estimate; grayed regions 
-       indicate masked regions.
-       
-       RHS shows normalized spectrum with velocity 
-       limits.
+<p>This GUI allows for interactive continuum fitting and equivalent width measurement of CGM/IGM/ISM absorption lines. [Based on rb_codes written by Rongmon Bordoloi.]</p>
 
-   ---------------------    
-   Mouse button Layout:
-   ---------------------
-       LMB/RMB = Left Mouse Button/Right Mouse Button
+<div class="section">Screen Layout</div>
+<ul>
+    <li><b>LHS (Left Hand Side):</b> Spectrum with overlaid Legendre polynomial continuum estimate; 
+    grayed regions indicate masked regions.</li>
+    <li><b>RHS (Right Hand Side):</b> Normalized spectrum with velocity limits.</li>
+    <li><b>Bottom Panel:</b> Na(v) profile (column density as function of velocity).</li>
+</ul>
 
-       
-   ---------------------
-   Useful Mouse Clicks:
-   ---------------------
-   *LHS:
-       LMB : Remove wavelengths from continuum fit 
-             (click left/right).
-       RMB : Add wavelengths to continuum fit 
-             (click left/right).
-   *RHS:
-       LMB : Set lower velocity limit
-       RMB : Set upper velocity limit
-       
-   ---------------------
-   Useful Keystrokes:            
-   ---------------------
+<div class="section">Mouse Controls</div>
+<table>
+    <tr>
+        <th>Action</th>
+        <th>Button</th>
+        <th>Panel</th>
+        <th>Effect</th>
+    </tr>
+    <tr>
+        <td>Click</td>
+        <td>LMB (Left)</td>
+        <td>LHS</td>
+        <td>Remove wavelengths from continuum fit</td>
+    </tr>
+    <tr>
+        <td>Click</td>
+        <td>RMB (Right)</td>
+        <td>LHS</td>
+        <td>Add wavelengths to continuum fit</td>
+    </tr>
+    <tr>
+        <td>Click</td>
+        <td>LMB (Left)</td>
+        <td>RHS</td>
+        <td>Set lower EW velocity limit</td>
+    </tr>
+    <tr>
+        <td>Click</td>
+        <td>RMB (Right)</td>
+        <td>RHS</td>
+        <td>Set upper EW velocity limit</td>
+    </tr>
+    <tr>
+        <td>Click 2x</td>
+        <td>LMB</td>
+        <td>Bottom</td>
+        <td>Define contamination region in Na(v)</td>
+    </tr>
+</table>
 
-       v  : place mouse on desired subplot
-             LHS: enter regions to mask continuum 
-             RHS: enter EW integration limits
-       
-              (RHS only)
-       
-       m   : Measure EW/N for active subplot
-       M   : Measure EW/N for ALL subplots
-       x/X : Zoom in/out along x-axis
-       y/Y : Zoom in/out along y-axis
-       [,] : Move left and right in velocity on LHS
-       w,s : Move up and down in flux on LHS
-       W,S : Move up and down in flux on LHS by larger steps
+<div class="section">Keyboard Shortcuts</div>
 
-       Up arrow    : Increase Polynomial Order [default 4]
-       Down arrow  : Decrease Polynomial Order [default 4]
+<div class="subsection">General Navigation</div>
+<table>
+    <tr>
+        <th>Key</th>
+        <th>Action</th>
+    </tr>
+    <tr>
+        <td><b>?</b></td>
+        <td>Open this help window</td>
+    </tr>
+    <tr>
+        <td><b>Q</b></td>
+        <td>Exit the GUI</td>
+    </tr>
+</table>
 
-       ---------------------
-       * RHS Only: 
-       ---------------------
-        
-        V : Use active subplot velocity limits for all lines
-        t : Cycle printed measurements. Displays logN, or EW
+<div class="subsection">Display & View Controls</div>
+<table>
+    <tr>
+        <th>Key</th>
+        <th>Action</th>
+    </tr>
+    <tr>
+        <td><b>[ / ]</b></td>
+        <td>Move view left / right in velocity space</td>
+    </tr>
+    <tr>
+        <td><b>x / X</b></td>
+        <td>Zoom in / out along x-axis (velocity)</td>
+    </tr>
+    <tr>
+        <td><b>y / Y</b></td>
+        <td>Zoom in / out along y-axis (flux)</td>
+    </tr>
+    <tr>
+        <td><b>w / s</b></td>
+        <td>Move up / down in flux by small steps</td>
+    </tr>
+    <tr>
+        <td><b>W / S</b></td>
+        <td>Move up / down in flux by larger steps</td>
+    </tr>
+    <tr>
+        <td><b>r</b></td>
+        <td>Reset view to initial state</td>
+    </tr>
+</table>
 
-        1/2/0 : flag absorber as
-                         (0) positive detection
-                         (1) upper limit 
-                         (2) lower limit
-       ---------------------
-       * Help & Quitting: 
-       ---------------------
-       ?   : Open this help window
-       Q   : Exit the GUI (close all windows)
+<div class="subsection">Continuum Fitting (LHS)</div>
+<table>
+    <tr>
+        <th>Key</th>
+        <th>Action</th>
+    </tr>
+    <tr>
+        <td><b>v</b></td>
+        <td>Enter manual mask region (velocity range to exclude from continuum fit)</td>
+    </tr>
+    <tr>
+        <td><b>Up Arrow</b></td>
+        <td>Increase polynomial order (default: 4)</td>
+    </tr>
+    <tr>
+        <td><b>Down Arrow</b></td>
+        <td>Decrease polynomial order</td>
+    </tr>
+</table>
 
+<div class="subsection">Measurements & Analysis</div>
+<table>
+    <tr>
+        <th>Key</th>
+        <th>Action</th>
+    </tr>
+    <tr>
+        <td><b>v</b></td>
+        <td>Enter manual EW integration region (velocity range)</td>
+    </tr>
+    <tr>
+        <td><b>m</b></td>
+        <td>Measure EW/Column Density for active subplot</td>
+    </tr>
+    <tr>
+        <td><b>M</b></td>
+        <td>Measure EW/Column Density for ALL subplots</td>
+    </tr>
+    <tr>
+        <td><b>N</b></td>
+        <td>Compute Na(v) profile (column density vs velocity)</td>
+    </tr>
+    <tr>
+        <td><b>V</b></td>
+        <td>Apply active subplot's velocity limits to all lines</td>
+    </tr>
+    <tr>
+        <td><b>t</b></td>
+        <td>Toggle text display: cycle between logN and EW</td>
+    </tr>
+</table>
 
-   -----------------------------------------------------
+<div class="subsection">Flagging & Quality Control</div>
+<table>
+    <tr>
+        <th>Key</th>
+        <th>Action</th>
+    </tr>
+    <tr>
+        <td><b>0 / 1 / 2</b></td>
+        <td>Flag absorber as: (0) detection, (1) upper limit, (2) lower limit</td>
+    </tr>
+</table>
 
-   Each tab displays up to 6 transitions. 
+<div class="section">Notes</div>
+<ul>
+    <li>Each tab displays up to 6 transitions</li>
+    <li>Maximum 5 tabs allowed (limiting total transitions to 30)</li>
+    <li>Place mouse over desired subplot before using keyboard shortcuts</li>
+</ul>
 
-   There are maximum 5 tabs allowed, limiting the total 
-   number of transitions that can be simultaneously 
-   analyzed to 30.
-       '''
+</body>
+</html>
+"""
 
 # Autocontinuum
 
@@ -1722,19 +1828,16 @@ class HelpWindow(QtWidgets.QWidget):
 
     def __init__(self,parent=None):
         super(HelpWindow, self).__init__(parent)
-        self.setWindowTitle("pyNorm GUI Help")
-        self.resize(600, 700)
+        self.setWindowTitle("pynorm GUI Help")
+        self.resize(800, 900)
         
         # Create layout
         layout = QtWidgets.QVBoxLayout(self)
         
-        # Use QTextBrowser for better text rendering with wrapping and scrolling
+        # Use QTextBrowser for rendering HTML-formatted help
         text_browser = QtWidgets.QTextBrowser(self)
-        text_browser.setPlainText(HELP)  # Use plain text mode
+        text_browser.setHtml(HELP)  # Use HTML mode for formatted tables and styling
         text_browser.setReadOnly(True)
-        text_browser.setWordWrapMode(QtGui.QTextOption.WordWrap)  # Wrap text at word boundaries
-        # Use fallback fonts for better cross-platform compatibility
-        text_browser.setStyleSheet("QTextBrowser { font-family: 'Courier New', 'Consolas', 'Monaco', 'DejaVu Sans Mono'; font-size: 14pt; }")
         
         layout.addWidget(text_browser)
         self.setLayout(layout)
