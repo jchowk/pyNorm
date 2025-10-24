@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "pyNorm"
+name = "pynorm"
 version = "0.3.3"
 description = "ND CGM group absorption line analysis code."
 authors = ["Chris Howk <jchowk@gmail.com>"]

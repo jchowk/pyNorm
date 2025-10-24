@@ -14,8 +14,8 @@ def read_rbcodes(input_filename, targname, ra, dec, ion, partial_pixels=True, bl
     import numpy as np
     from collections import OrderedDict
     from scipy.io import readsav
-    from pyNorm.aod import pyn_batch
-    from pyNorm.continuum import continuum_fit
+    from pynorm.aod import pyn_batch
+    from pynorm.continuum import continuum_fit
     import pickle
     from astropy.coordinates import SkyCoord
 
@@ -189,7 +189,7 @@ def read_inorm(input_filename, partial_pixels=True, blemish_correction=True):
     import numpy as np
     from collections import OrderedDict
     from scipy.io import readsav
-    from pyNorm.aod import pyn_batch
+    from pynorm.aod import pyn_batch
 
     # Read the save file:
     spec_in = readsav(input_filename)
