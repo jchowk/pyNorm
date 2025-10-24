@@ -283,38 +283,32 @@ HELP = """
 <div class="section">Mouse Controls</div>
 <table>
     <tr>
-        <th>Action</th>
         <th>Button</th>
         <th>Panel</th>
         <th>Effect</th>
     </tr>
     <tr>
-        <td>Click</td>
         <td>LMB (Left)</td>
         <td>LHS</td>
         <td>Remove wavelengths from continuum fit</td>
     </tr>
     <tr>
-        <td>Click</td>
         <td>RMB (Right)</td>
         <td>LHS</td>
         <td>Add wavelengths to continuum fit</td>
     </tr>
     <tr>
-        <td>Click</td>
         <td>LMB (Left)</td>
         <td>RHS</td>
         <td>Set lower EW velocity limit</td>
     </tr>
     <tr>
-        <td>Click</td>
         <td>RMB (Right)</td>
         <td>RHS</td>
         <td>Set upper EW velocity limit</td>
     </tr>
     <tr>
-        <td>Click 2x</td>
-        <td>LMB</td>
+        <td>LMB (2x)</td>
         <td>Bottom</td>
         <td>Define contamination region in Na(v)</td>
     </tr>
