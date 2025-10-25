@@ -850,10 +850,19 @@ class mainWindow(QtWidgets.QTabWidget):
     def closeEvent(self, event):
         """Handle window close event gracefully."""
         try:
-            # Close all matplotlib figures
+            # Close help window if open
+            if hasattr(self, 'sub') and self.sub is not None:
+                try:
+                    self.sub.close()
+                    self.sub = None
+                except:
+                    pass
+            
+            # Disconnect all matplotlib event handlers
             import matplotlib.pyplot as plt
             for fig in self.figs:
                 try:
+                    fig.canvas.mpl_disconnect('all')
                     plt.close(fig)
                 except:
                     pass
@@ -1683,7 +1692,7 @@ class plotText:
         if ew is not None and ew_err is not None:
             # Both values exist - show full measurement
             EW_det_text = str('%.0f' % ew) + r' $\pm$ ' + str('%.0f' % ew_err) + r' m$\AA$'
-            EW_limit_text = "<{:.0f} m$\AA$".format(2. * ew_err)  # upper limit
+            EW_limit_text = "<{:.0f} m$\\AA$".format(2. * ew_err)  # upper limit
             # Only compute logN if N values exist and are positive
             if 'N' in line and line['N'] is not None and line['N'] > 0:
                 try:
@@ -1695,7 +1704,7 @@ class plotText:
         elif ew_err is not None:
             # Only upper limit available
             EW_det_text = "N/A"
-            EW_limit_text = "<{:.0f} m$\AA$".format(2. * ew_err)  # upper limit
+            EW_limit_text = "<{:.0f} m$\\AA$".format(2. * ew_err)  # upper limit
             logN_det_text = "N/A"            
         else:
             # No valid measurements
@@ -2063,11 +2072,19 @@ class Transitions:
         main.show()
         QtWidgets.QApplication.setQuitOnLastWindowClosed(True)
 
+        # Check if we're running in IPython with interactive backend
         try:
-            exit_code = app.exec_()
-            main.deleteLater()         # Schedule proper deletion
-            app.processEvents()        # Handle pending events
-            # Don't call sys.exit() to maintain IPython compatibility
-            # sys.exit(exit_code) would break interactive sessions
-        except Exception as e:
-            print(f"Error during shutdown: {e}")
+            import IPython
+            in_ipython = IPython.get_ipython() is not None
+        except:
+            in_ipython = False
+        
+        # Only run blocking event loop if NOT in IPython
+        # IPython manages its own event loop when --matplotlib is used
+        if not in_ipython:
+            try:
+                exit_code = app.exec_()
+                main.deleteLater()         # Schedule proper deletion
+                app.processEvents()        # Handle pending events
+            except Exception as e:
+                print(f"Error during shutdown: {e}")
