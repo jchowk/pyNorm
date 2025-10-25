@@ -2021,7 +2021,32 @@ class SavePage(QtWidgets.QWidget):
         
 #Initial inputs and callable class to run proram        
 class Transitions:
+    # Class variable to store the current main window instance
+    _current_window = None
+    
     def __init__(self,Abs,intervening=False,instrument=None):
+        import matplotlib.pyplot as plt
+        
+        # Clean up any previous window instance
+        if Transitions._current_window is not None:
+            try:
+                # Close all matplotlib figures from previous instance
+                for fig in Transitions._current_window.figs:
+                    try:
+                        fig.canvas.mpl_disconnect('all')
+                        plt.close(fig)
+                    except:
+                        pass
+                
+                # Close the previous window
+                if not Transitions._current_window.isHidden():
+                    Transitions._current_window.close()
+                Transitions._current_window.deleteLater()
+            except Exception as e:
+                print(f"Warning: Could not clean up previous window: {e}")
+            finally:
+                Transitions._current_window = None
+        
         if not QtWidgets.QApplication.instance():
             # Set the exception hook BEFORE launching the app
             sys.excepthook = handle_exception
@@ -2070,6 +2095,10 @@ class Transitions:
         main = mainWindow(Abs,intervening=intervening,instrument=instrument)
         main.resize(1800, 900)
         main.show()
+        
+        # Store reference to current window for cleanup on next instantiation
+        Transitions._current_window = main
+        
         QtWidgets.QApplication.setQuitOnLastWindowClosed(True)
 
         # Check if we're running in IPython with interactive backend
