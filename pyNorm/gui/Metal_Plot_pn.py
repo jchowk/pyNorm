@@ -41,6 +41,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         QMessageBox.critical(None, "Python Error", tb_str)
 
 
+
 def compute_EW(lam,flx,wrest,lmts,flx_err,plot=False,**kwargs):
     """
     ------------------------------------------------------------------------------------------
@@ -858,17 +859,47 @@ class mainWindow(QtWidgets.QTabWidget):
                 except:
                     pass
             
-            # Disconnect all matplotlib event handlers
-            import matplotlib.pyplot as plt
-            for fig in self.figs:
+            # Safely disconnect and close matplotlib figures
+            if hasattr(self, 'figs'):
                 try:
-                    fig.canvas.mpl_disconnect('all')
-                    plt.close(fig)
+                    # Disconnect all handlers
+                    for fig in self.figs:
+                        try:
+                            if hasattr(fig, 'canvas'):
+                                fig.canvas.mpl_disconnect('all')
+                        except:
+                            pass
+                    
+                    # Close all figures using matplotlib
+                    import matplotlib.pyplot as plt
+                    for fig in self.figs:
+                        try:
+                            plt.close(fig)
+                        except:
+                            pass
                 except:
                     pass
+            
+            # Safely disconnect canvas handlers
+            if hasattr(self, 'canvas'):
+                try:
+                    for canvas in self.canvas:
+                        try:
+                            canvas.deleteLater()
+                        except:
+                            pass
+                except:
+                    pass
+            
+            # Clear figure and canvas references
+            try:
+                self.figs = []
+                self.canvas = []
+            except:
+                pass
         except:
             pass
-        # Accept the close event
+        # Accept the close event - window will be hidden
         event.accept()
         
     def apply_zoom_from_combo(self):
@@ -2021,99 +2052,145 @@ class SavePage(QtWidgets.QWidget):
         
 #Initial inputs and callable class to run proram        
 class Transitions:
-    # Class variable to store the current main window instance
+    # Class variables - single app and window shared across all instances
     _current_window = None
+    _app = None
     
-    def __init__(self,Abs,intervening=False,instrument=None):
-        import matplotlib.pyplot as plt
+    def __init__(self, Abs, intervening=False, instrument=None):
+        """
+        Create the GUI window with new data.
         
-        # Clean up any previous window instance
+        Simplified approach: Create the Qt application once (reused for all instances),
+        but create fresh windows for each Transitions() call. Qt application lifecycle
+        is managed, but windows are independent and can be closed/reopened freely.
+        """
+        import matplotlib.pyplot as plt
+        import gc
+        
+        # Clean up any previous window before creating new one
         if Transitions._current_window is not None:
             try:
-                # Close all matplotlib figures from previous instance
-                for fig in Transitions._current_window.figs:
-                    try:
-                        fig.canvas.mpl_disconnect('all')
-                        plt.close(fig)
-                    except:
-                        pass
-                
-                # Close the previous window
-                if not Transitions._current_window.isHidden():
-                    Transitions._current_window.close()
+                Transitions._current_window.close()
                 Transitions._current_window.deleteLater()
-            except Exception as e:
-                print(f"Warning: Could not clean up previous window: {e}")
-            finally:
-                Transitions._current_window = None
+            except:
+                pass
+            Transitions._current_window = None
         
-        if not QtWidgets.QApplication.instance():
-            # Set the exception hook BEFORE launching the app
-            sys.excepthook = handle_exception
-            app = QtWidgets.QApplication(sys.argv)
-            app.setStyle("Fusion")
+        # Process events to allow cleanup
+        if Transitions._app is not None:
+            try:
+                Transitions._app.processEvents()
+            except:
+                pass
+        
+        # Force garbage collection
+        gc.collect()
+        
+        # Ensure Qt application exists (created only once)
+        if Transitions._app is None:
+            if not QtWidgets.QApplication.instance():
+                sys.excepthook = handle_exception
+                Transitions._app = QtWidgets.QApplication(sys.argv)
+                Transitions._app.setStyle("Fusion")
 
-            # Now use a palette to switch to dark colors:
-            palette = QPalette()
-            palette.setColor(QPalette.Window, QColor(53, 53, 53))
-            palette.setColor(QPalette.WindowText, QtCore.Qt.white)        
-            palette.setColor(QPalette.Base, QColor(25, 25, 25))
-            palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-            palette.setColor(QPalette.Button, QColor(53, 53, 53))
-            palette.setColor(QPalette.ButtonText, QtCore.Qt.white)
-            palette.setColor(QPalette.BrightText, QtCore.Qt.red)
-            palette.setColor(QPalette.Link, QColor(42, 130, 218))
-            palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-            palette.setColor(QPalette.Text, QtCore.Qt.white)
+                # Set dark palette
+                palette = QPalette()
+                palette.setColor(QPalette.Window, QColor(53, 53, 53))
+                palette.setColor(QPalette.WindowText, QtCore.Qt.white)        
+                palette.setColor(QPalette.Base, QColor(25, 25, 25))
+                palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+                palette.setColor(QPalette.Button, QColor(53, 53, 53))
+                palette.setColor(QPalette.ButtonText, QtCore.Qt.white)
+                palette.setColor(QPalette.BrightText, QtCore.Qt.red)
+                palette.setColor(QPalette.Link, QColor(42, 130, 218))
+                palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+                palette.setColor(QPalette.Text, QtCore.Qt.white)
     
-            app.setPalette(palette)
-
-        else:
-            app = QtWidgets.QApplication.instance() 
-
-
-
-
-        #app = QtWidgets.QApplication(sys.argv)
-        # Force the style to be the same on all OSs:
-        #app.setStyle("Fusion")
-
-        # Now use a palette to switch to dark colors:
-        #palette = QPalette()
-        #palette.setColor(QPalette.Window, QColor(53, 53, 53))
-        #palette.setColor(QPalette.WindowText, QtCore.Qt.white)        
-        #palette.setColor(QPalette.Base, QColor(25, 25, 25))
-        #palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-        #palette.setColor(QPalette.Button, QColor(53, 53, 53))
-        #palette.setColor(QPalette.ButtonText, QtCore.Qt.white)
-        #palette.setColor(QPalette.BrightText, QtCore.Qt.red)
-        #palette.setColor(QPalette.Link, QColor(42, 130, 218))
-        #palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-        #palette.setColor(QPalette.Text, QtCore.Qt.white)
-
-        #app.setPalette(palette)
-        main = mainWindow(Abs,intervening=intervening,instrument=instrument)
-        main.resize(1800, 900)
-        main.show()
+                Transitions._app.setPalette(palette)
+            else:
+                Transitions._app = QtWidgets.QApplication.instance()
         
-        # Store reference to current window for cleanup on next instantiation
-        Transitions._current_window = main
-        
-        QtWidgets.QApplication.setQuitOnLastWindowClosed(True)
-
-        # Check if we're running in IPython with interactive backend
+        # Check if we're in IPython
         try:
             import IPython
             in_ipython = IPython.get_ipython() is not None
         except:
             in_ipython = False
         
+        # Create new window for this instance
+        print("Creating new GUI window...")
+        main = mainWindow(Abs, intervening=intervening, instrument=instrument)
+        main.resize(1800, 900)
+        main.show()
+        
+        # Store reference to current window (for cleanup tracking)
+        Transitions._current_window = main
+        
+        QtWidgets.QApplication.setQuitOnLastWindowClosed(True)
+
         # Only run blocking event loop if NOT in IPython
-        # IPython manages its own event loop when --matplotlib is used
         if not in_ipython:
             try:
-                exit_code = app.exec_()
-                main.deleteLater()         # Schedule proper deletion
-                app.processEvents()        # Handle pending events
+                exit_code = Transitions._app.exec_()
             except Exception as e:
-                print(f"Error during shutdown: {e}")
+                print(f"Error during GUI execution: {e}")
+    
+    
+    @classmethod
+    def cleanup(cls):
+        """Clean up Qt resources before exit."""
+        try:
+            import matplotlib.pyplot as plt
+            import gc
+            
+            if cls._current_window is not None:
+                try:
+                    cls._current_window.close()
+                except:
+                    pass
+                try:
+                    cls._current_window.deleteLater()
+                except:
+                    pass
+                cls._current_window = None
+            
+            # Close all matplotlib figures
+            try:
+                plt.close('all')
+            except:
+                pass
+            
+            if cls._app is not None:
+                try:
+                    cls._app.quit()
+                except:
+                    pass
+                cls._app = None
+            
+            # Force garbage collection
+            gc.collect()
+        except:
+            pass
+    
+    def __del__(self):
+        """Cleanup when instance is destroyed."""
+        try:
+            if Transitions._current_window is not None and not Transitions._current_window.isHidden():
+                pass  # Don't close on every deletion
+        except:
+            pass
+
+
+# Register cleanup at module unload - use os._exit to prevent further Qt cleanup
+import atexit
+import os as _os
+
+def _force_exit_on_cleanup():
+    """Force exit to prevent Qt segfaults during cleanup."""
+    Transitions.cleanup()
+    # Use os._exit() to skip Python's normal shutdown which causes segfaults
+    _os._exit(0)
+
+# Only register if we're not in pytest or other test framework
+if 'pytest' not in sys.modules and __name__ != '__main__':
+    atexit.register(_force_exit_on_cleanup)

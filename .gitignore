@@ -14,3 +14,4 @@ docs/Testing/*
 *checkpoint.ipynb
 .vscode/
 docs/.ipynb_checkpoints/
+test*py
