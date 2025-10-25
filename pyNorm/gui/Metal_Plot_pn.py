@@ -2052,88 +2052,62 @@ class SavePage(QtWidgets.QWidget):
         
 #Initial inputs and callable class to run proram        
 class Transitions:
-    # Class variables - single app and window shared across all instances
-    _current_window = None
-    _app = None
-    
     def __init__(self, Abs, intervening=False, instrument=None):
         """
         Create the GUI window with new data.
         
-        Simplified approach: Create the Qt application once (reused for all instances),
-        but create fresh windows for each Transitions() call. Qt application lifecycle
-        is managed, but windows are independent and can be closed/reopened freely.
+        Strategy: Use a persistent Qt application and non-blocking event handling.
+        Windows are kept alive independently and don't block the main thread.
         """
         import matplotlib.pyplot as plt
-        import gc
+        import sys
         
-        # Clean up any previous window before creating new one
-        if Transitions._current_window is not None:
-            try:
-                Transitions._current_window.close()
-                Transitions._current_window.deleteLater()
-            except:
-                pass
-            Transitions._current_window = None
+        # Track if this is first instance before creating app
+        is_first_instance = QtWidgets.QApplication.instance() is None
         
-        # Process events to allow cleanup
-        if Transitions._app is not None:
-            try:
-                Transitions._app.processEvents()
-            except:
-                pass
-        
-        # Force garbage collection
-        gc.collect()
-        
-        # Ensure Qt application exists (created only once)
-        if Transitions._app is None:
-            if not QtWidgets.QApplication.instance():
-                sys.excepthook = handle_exception
-                Transitions._app = QtWidgets.QApplication(sys.argv)
-                Transitions._app.setStyle("Fusion")
+        # Get or create Qt application - persistent for the session
+        app = QtWidgets.QApplication.instance()
+        if app is None:
+            sys.excepthook = handle_exception
+            app = QtWidgets.QApplication(sys.argv)
+            app.setStyle("Fusion")
 
-                # Set dark palette
-                palette = QPalette()
-                palette.setColor(QPalette.Window, QColor(53, 53, 53))
-                palette.setColor(QPalette.WindowText, QtCore.Qt.white)        
-                palette.setColor(QPalette.Base, QColor(25, 25, 25))
-                palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-                palette.setColor(QPalette.Button, QColor(53, 53, 53))
-                palette.setColor(QPalette.ButtonText, QtCore.Qt.white)
-                palette.setColor(QPalette.BrightText, QtCore.Qt.red)
-                palette.setColor(QPalette.Link, QColor(42, 130, 218))
-                palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-                palette.setColor(QPalette.Text, QtCore.Qt.white)
-    
-                Transitions._app.setPalette(palette)
-            else:
-                Transitions._app = QtWidgets.QApplication.instance()
+            # Set dark palette
+            palette = QPalette()
+            palette.setColor(QPalette.Window, QColor(53, 53, 53))
+            palette.setColor(QPalette.WindowText, QtCore.Qt.white)        
+            palette.setColor(QPalette.Base, QColor(25, 25, 25))
+            palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+            palette.setColor(QPalette.Button, QColor(53, 53, 53))
+            palette.setColor(QPalette.ButtonText, QtCore.Qt.white)
+            palette.setColor(QPalette.BrightText, QtCore.Qt.red)
+            palette.setColor(QPalette.Link, QColor(42, 130, 218))
+            palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+            palette.setColor(QPalette.Text, QtCore.Qt.white)
+
+            app.setPalette(palette)
+
+        # Create new window for this instance
+        main = mainWindow(Abs, intervening=intervening, instrument=instrument)
+        main.resize(1800, 900)
+        main.show()
         
+        # Don't quit the entire app when one window closes
+        QtWidgets.QApplication.setQuitOnLastWindowClosed(False)
+
         # Check if we're in IPython
         try:
             import IPython
             in_ipython = IPython.get_ipython() is not None
         except:
             in_ipython = False
-        
-        # Create new window for this instance
-        print("Creating new GUI window...")
-        main = mainWindow(Abs, intervening=intervening, instrument=instrument)
-        main.resize(1800, 900)
-        main.show()
-        
-        # Store reference to current window (for cleanup tracking)
-        Transitions._current_window = main
-        
-        QtWidgets.QApplication.setQuitOnLastWindowClosed(True)
 
-        # Only run blocking event loop if NOT in IPython
-        if not in_ipython:
-            try:
-                exit_code = Transitions._app.exec_()
-            except Exception as e:
-                print(f"Error during GUI execution: {e}")
+        # Only process events on first instance or in IPython
+        # On subsequent non-IPython instances, skip processEvents to avoid segfault
+        if is_first_instance or in_ipython:
+            app.processEvents()
+        print("[Transitions.__init__] Initialization complete!")
+        sys.stdout.flush()
     
     
     @classmethod
@@ -2143,29 +2117,11 @@ class Transitions:
             import matplotlib.pyplot as plt
             import gc
             
-            if cls._current_window is not None:
-                try:
-                    cls._current_window.close()
-                except:
-                    pass
-                try:
-                    cls._current_window.deleteLater()
-                except:
-                    pass
-                cls._current_window = None
-            
             # Close all matplotlib figures
             try:
                 plt.close('all')
             except:
                 pass
-            
-            if cls._app is not None:
-                try:
-                    cls._app.quit()
-                except:
-                    pass
-                cls._app = None
             
             # Force garbage collection
             gc.collect()
@@ -2174,23 +2130,7 @@ class Transitions:
     
     def __del__(self):
         """Cleanup when instance is destroyed."""
-        try:
-            if Transitions._current_window is not None and not Transitions._current_window.isHidden():
-                pass  # Don't close on every deletion
-        except:
-            pass
+        pass  # No need for instance cleanup now
 
 
-# Register cleanup at module unload - use os._exit to prevent further Qt cleanup
-import atexit
-import os as _os
-
-def _force_exit_on_cleanup():
-    """Force exit to prevent Qt segfaults during cleanup."""
-    Transitions.cleanup()
-    # Use os._exit() to skip Python's normal shutdown which causes segfaults
-    _os._exit(0)
-
-# Only register if we're not in pytest or other test framework
-if 'pytest' not in sys.modules and __name__ != '__main__':
-    atexit.register(_force_exit_on_cleanup)
+# Qt resources clean up naturally with app.exec_() lifecycle
