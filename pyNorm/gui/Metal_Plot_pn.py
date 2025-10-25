@@ -41,6 +41,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         QMessageBox.critical(None, "Python Error", tb_str)
 
 
+
 def compute_EW(lam,flx,wrest,lmts,flx_err,plot=False,**kwargs):
     """
     ------------------------------------------------------------------------------------------
@@ -141,7 +142,7 @@ def compute_EW(lam,flx,wrest,lmts,flx_err,plot=False,**kwargs):
 
 
 
-    print('W_lambda = ' + str('%.3f' % ew_tot) + ' +/- ' + str('%.3f' % err_ew_tot)  +'  \AA   over [' + str('%.1f' % np.round(lmts[0]))+' to ' +str('%.1f' % np.round(lmts[1])) + ']  km/s')
+    print(r'W_lambda = ' + str('%.3f' % ew_tot) + r' +/- ' + str('%.3f' % err_ew_tot)  +r'  \AA   over [' + str('%.1f' % np.round(lmts[0]))+r' to ' +str('%.1f' % np.round(lmts[1])) + r']  km/s')
     output={}
     output["ew_tot"]=ew_tot
     output["err_ew_tot"]=err_ew_tot
@@ -189,7 +190,7 @@ def compute_EW(lam,flx,wrest,lmts,flx_err,plot=False,**kwargs):
         ax1.plot([-2500,2500],[1,1],'k:')       
         plt.plot([lmts[0],lmts[0]],[1.5,1.5],'r+',markersize=15)        
         plt.plot([lmts[1],lmts[1]],[1.5,1.5],'r+',markersize=15)    
-        plt.title(r' $W_{rest}$= ' + str('%.3f' % ew_tot) + ' $\pm$ ' + str('%.3f' % err_ew_tot) + ' $\AA$')
+        plt.title(r' $W_{rest}$= ' + str('%.3f' % ew_tot) + r' $\pm$ ' + str('%.3f' % err_ew_tot) + r' $\AA$')
         ax1.set_xlabel('vel [km/s]')
     
         ax2=fig.add_subplot(212)
@@ -850,16 +851,55 @@ class mainWindow(QtWidgets.QTabWidget):
     def closeEvent(self, event):
         """Handle window close event gracefully."""
         try:
-            # Close all matplotlib figures
-            import matplotlib.pyplot as plt
-            for fig in self.figs:
+            # Close help window if open
+            if hasattr(self, 'sub') and self.sub is not None:
                 try:
-                    plt.close(fig)
+                    self.sub.close()
+                    self.sub = None
                 except:
                     pass
+            
+            # Safely disconnect and close matplotlib figures
+            if hasattr(self, 'figs'):
+                try:
+                    # Disconnect all handlers
+                    for fig in self.figs:
+                        try:
+                            if hasattr(fig, 'canvas'):
+                                fig.canvas.mpl_disconnect('all')
+                        except:
+                            pass
+                    
+                    # Close all figures using matplotlib
+                    import matplotlib.pyplot as plt
+                    for fig in self.figs:
+                        try:
+                            plt.close(fig)
+                        except:
+                            pass
+                except:
+                    pass
+            
+            # Safely disconnect canvas handlers
+            if hasattr(self, 'canvas'):
+                try:
+                    for canvas in self.canvas:
+                        try:
+                            canvas.deleteLater()
+                        except:
+                            pass
+                except:
+                    pass
+            
+            # Clear figure and canvas references
+            try:
+                self.figs = []
+                self.canvas = []
+            except:
+                pass
         except:
             pass
-        # Accept the close event
+        # Accept the close event - window will be hidden
         event.accept()
         
     def apply_zoom_from_combo(self):
@@ -1682,12 +1722,12 @@ class plotText:
         # Handle None or missing values
         if ew is not None and ew_err is not None:
             # Both values exist - show full measurement
-            EW_det_text = str('%.0f' % ew) + ' $\pm$ ' + str('%.0f' % ew_err) + ' m$\AA$'
-            EW_limit_text = "<{:.0f} m$\AA$".format(2. * ew_err)  # upper limit
+            EW_det_text = str('%.0f' % ew) + r' $\pm$ ' + str('%.0f' % ew_err) + r' m$\AA$'
+            EW_limit_text = "<{:.0f} m$\\AA$".format(2. * ew_err)  # upper limit
             # Only compute logN if N values exist and are positive
             if 'N' in line and line['N'] is not None and line['N'] > 0:
                 try:
-                    logN_det_text= str('%.2f' % np.log10(line['N'])) +' $\pm$ ' + str('%.3f' % (np.log10(line['N']+line['Nsig']) - np.log10(line['N']))) + ' /cm$^2$'
+                    logN_det_text= str('%.2f' % np.log10(line['N'])) +r' $\pm$ ' + str('%.3f' % (np.log10(line['N']+line['Nsig']) - np.log10(line['N']))) + r' /cm$^2$'
                 except (ValueError, TypeError):
                     logN_det_text = "N/A"
             else:
@@ -1695,7 +1735,7 @@ class plotText:
         elif ew_err is not None:
             # Only upper limit available
             EW_det_text = "N/A"
-            EW_limit_text = "<{:.0f} m$\AA$".format(2. * ew_err)  # upper limit
+            EW_limit_text = "<{:.0f} m$\\AA$".format(2. * ew_err)  # upper limit
             logN_det_text = "N/A"            
         else:
             # No valid measurements
@@ -1975,7 +2015,7 @@ class SavePage(QtWidgets.QWidget):
         print(Table_e)
         
         #pdf save
-        pdflabel = QLabel("Enter path and filename: (e.g. pathname\Ions.pdf)",self)
+        pdflabel = QLabel(r"Enter path and filename: (e.g. pathname\Ions.pdf)",self)
         pdflabel.setGeometry(100,100,400,30)
         
         self.pdfline = QLineEdit(self)
@@ -1986,7 +2026,7 @@ class SavePage(QtWidgets.QWidget):
         self.pdfsave.setGeometry(410,125,200,30)
         self.pdfsave.clicked.connect(lambda: onpdf(self,parentvals))
         #table save
-        tablelabel = QLabel("Enter path and filename: (e.g. pathname\Table.dat)",self)
+        tablelabel = QLabel(r"Enter path and filename: (e.g. pathname\Table.dat)",self)
         tablelabel.setGeometry(100,175,400,30)
         
         self.tableline = QLineEdit(self)
@@ -1998,7 +2038,7 @@ class SavePage(QtWidgets.QWidget):
         self.tablesave.clicked.connect(lambda: ontable(self,parentvals,Table_e))
         
         #pickle save
-        picklelabel = QLabel("Enter path and filename: (e.g. pathname\Table.p)",self)
+        picklelabel = QLabel(r"Enter path and filename: (e.g. pathname\Table.p)",self)
         picklelabel.setGeometry(100,250,400,30)
         
         self.pickleline = QLineEdit(self)
@@ -2012,14 +2052,30 @@ class SavePage(QtWidgets.QWidget):
         
 #Initial inputs and callable class to run proram        
 class Transitions:
-    def __init__(self,Abs,intervening=False,instrument=None):
-        if not QtWidgets.QApplication.instance():
-            # Set the exception hook BEFORE launching the app
+    def __init__(self, Abs, intervening=False, instrument=None):
+        """
+        Create the GUI window with new data.
+        
+        Strategy: Create or reuse Qt application, keep reference to window,
+        and use proper event loop management based on environment.
+        """
+        import sys
+        
+        # Check if we're in IPython/interactive environment
+        try:
+            import IPython
+            in_ipython = IPython.get_ipython() is not None
+        except:
+            in_ipython = False
+        
+        # Get or create Qt application
+        app = QtWidgets.QApplication.instance()
+        if app is None:
             sys.excepthook = handle_exception
             app = QtWidgets.QApplication(sys.argv)
             app.setStyle("Fusion")
 
-            # Now use a palette to switch to dark colors:
+            # Set dark palette
             palette = QPalette()
             palette.setColor(QPalette.Window, QColor(53, 53, 53))
             palette.setColor(QPalette.WindowText, QtCore.Qt.white)        
@@ -2031,43 +2087,45 @@ class Transitions:
             palette.setColor(QPalette.Link, QColor(42, 130, 218))
             palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
             palette.setColor(QPalette.Text, QtCore.Qt.white)
-    
+
             app.setPalette(palette)
 
+        # Create new window for this instance and keep reference
+        self.main = mainWindow(Abs, intervening=intervening, instrument=instrument)
+        self.main.resize(1800, 900)
+        self.main.show()
+        
+        # In IPython: just show window and return (IPython's event loop handles it)
+        if in_ipython:
+            QtWidgets.QApplication.setQuitOnLastWindowClosed(False)
+            app.processEvents()
         else:
-            app = QtWidgets.QApplication.instance() 
-
-
-
-
-        #app = QtWidgets.QApplication(sys.argv)
-        # Force the style to be the same on all OSs:
-        #app.setStyle("Fusion")
-
-        # Now use a palette to switch to dark colors:
-        #palette = QPalette()
-        #palette.setColor(QPalette.Window, QColor(53, 53, 53))
-        #palette.setColor(QPalette.WindowText, QtCore.Qt.white)        
-        #palette.setColor(QPalette.Base, QColor(25, 25, 25))
-        #palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-        #palette.setColor(QPalette.Button, QColor(53, 53, 53))
-        #palette.setColor(QPalette.ButtonText, QtCore.Qt.white)
-        #palette.setColor(QPalette.BrightText, QtCore.Qt.red)
-        #palette.setColor(QPalette.Link, QColor(42, 130, 218))
-        #palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-        #palette.setColor(QPalette.Text, QtCore.Qt.white)
-
-        #app.setPalette(palette)
-        main = mainWindow(Abs,intervening=intervening,instrument=instrument)
-        main.resize(1800, 900)
-        main.show()
-        QtWidgets.QApplication.setQuitOnLastWindowClosed(True)
-
+            # In standalone script: run blocking event loop until window closes
+            QtWidgets.QApplication.setQuitOnLastWindowClosed(True)
+            app.exec_()
+    
+    
+    @classmethod
+    def cleanup(cls):
+        """Clean up Qt resources before exit."""
         try:
-            exit_code = app.exec_()
-            main.deleteLater()         # Schedule proper deletion
-            app.processEvents()        # Handle pending events
-            sys.exit(exit_code)        # Clean exit
-        except Exception as e:
-            print(f"Error during shutdown: {e}")
-            sys.exit(1)
+            import matplotlib.pyplot as plt
+            import gc
+            
+            # Close all matplotlib figures
+            try:
+                plt.close('all')
+            except:
+                pass
+            
+            # Force garbage collection
+            gc.collect()
+        except:
+            pass
+    
+    def __del__(self):
+        """Cleanup when instance is destroyed."""
+        pass  # No need for instance cleanup now
+
+
+# Qt resources clean up naturally with app.exec_() lifecycle
