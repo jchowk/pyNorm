@@ -2056,16 +2056,19 @@ class Transitions:
         """
         Create the GUI window with new data.
         
-        Strategy: Use a persistent Qt application and non-blocking event handling.
-        Windows are kept alive independently and don't block the main thread.
+        Strategy: Create or reuse Qt application, keep reference to window,
+        and use proper event loop management based on environment.
         """
-        import matplotlib.pyplot as plt
         import sys
         
-        # Track if this is first instance before creating app
-        is_first_instance = QtWidgets.QApplication.instance() is None
+        # Check if we're in IPython/interactive environment
+        try:
+            import IPython
+            in_ipython = IPython.get_ipython() is not None
+        except:
+            in_ipython = False
         
-        # Get or create Qt application - persistent for the session
+        # Get or create Qt application
         app = QtWidgets.QApplication.instance()
         if app is None:
             sys.excepthook = handle_exception
@@ -2087,25 +2090,19 @@ class Transitions:
 
             app.setPalette(palette)
 
-        # Create new window for this instance
-        main = mainWindow(Abs, intervening=intervening, instrument=instrument)
-        main.resize(1800, 900)
-        main.show()
+        # Create new window for this instance and keep reference
+        self.main = mainWindow(Abs, intervening=intervening, instrument=instrument)
+        self.main.resize(1800, 900)
+        self.main.show()
         
-        # Don't quit the entire app when one window closes
-        QtWidgets.QApplication.setQuitOnLastWindowClosed(False)
-
-        # Check if we're in IPython
-        try:
-            import IPython
-            in_ipython = IPython.get_ipython() is not None
-        except:
-            in_ipython = False
-
-        # Only process events on first instance or in IPython
-        # On subsequent non-IPython instances, skip processEvents to avoid segfault
-        if is_first_instance or in_ipython:
+        # In IPython: just show window and return (IPython's event loop handles it)
+        if in_ipython:
+            QtWidgets.QApplication.setQuitOnLastWindowClosed(False)
             app.processEvents()
+        else:
+            # In standalone script: run blocking event loop until window closes
+            QtWidgets.QApplication.setQuitOnLastWindowClosed(True)
+            app.exec_()
     
     
     @classmethod
