@@ -2106,8 +2106,6 @@ class Transitions:
         # On subsequent non-IPython instances, skip processEvents to avoid segfault
         if is_first_instance or in_ipython:
             app.processEvents()
-        print("[Transitions.__init__] Initialization complete!")
-        sys.stdout.flush()
     
     
     @classmethod
