@@ -32,7 +32,7 @@ except ImportError:
         files = None
 
 def rb_setline(lambda_rest,method,linelist='atom',target_name=None):
-    """
+    r"""
     Function to read in atomic line information for a given rest frame  wavelength.
                            Or 
     For the line matching the closest wavelength. 
