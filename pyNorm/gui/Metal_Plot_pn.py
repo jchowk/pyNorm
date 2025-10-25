@@ -141,7 +141,7 @@ def compute_EW(lam,flx,wrest,lmts,flx_err,plot=False,**kwargs):
 
 
 
-    print('W_lambda = ' + str('%.3f' % ew_tot) + ' +/- ' + str('%.3f' % err_ew_tot)  +'  \AA   over [' + str('%.1f' % np.round(lmts[0]))+' to ' +str('%.1f' % np.round(lmts[1])) + ']  km/s')
+    print(r'W_lambda = ' + str('%.3f' % ew_tot) + r' +/- ' + str('%.3f' % err_ew_tot)  +r'  \AA   over [' + str('%.1f' % np.round(lmts[0]))+r' to ' +str('%.1f' % np.round(lmts[1])) + r']  km/s')
     output={}
     output["ew_tot"]=ew_tot
     output["err_ew_tot"]=err_ew_tot
@@ -189,7 +189,7 @@ def compute_EW(lam,flx,wrest,lmts,flx_err,plot=False,**kwargs):
         ax1.plot([-2500,2500],[1,1],'k:')       
         plt.plot([lmts[0],lmts[0]],[1.5,1.5],'r+',markersize=15)        
         plt.plot([lmts[1],lmts[1]],[1.5,1.5],'r+',markersize=15)    
-        plt.title(r' $W_{rest}$= ' + str('%.3f' % ew_tot) + ' $\pm$ ' + str('%.3f' % err_ew_tot) + ' $\AA$')
+        plt.title(r' $W_{rest}$= ' + str('%.3f' % ew_tot) + r' $\pm$ ' + str('%.3f' % err_ew_tot) + r' $\AA$')
         ax1.set_xlabel('vel [km/s]')
     
         ax2=fig.add_subplot(212)
@@ -1682,12 +1682,12 @@ class plotText:
         # Handle None or missing values
         if ew is not None and ew_err is not None:
             # Both values exist - show full measurement
-            EW_det_text = str('%.0f' % ew) + ' $\pm$ ' + str('%.0f' % ew_err) + ' m$\AA$'
+            EW_det_text = str('%.0f' % ew) + r' $\pm$ ' + str('%.0f' % ew_err) + r' m$\AA$'
             EW_limit_text = "<{:.0f} m$\AA$".format(2. * ew_err)  # upper limit
             # Only compute logN if N values exist and are positive
             if 'N' in line and line['N'] is not None and line['N'] > 0:
                 try:
-                    logN_det_text= str('%.2f' % np.log10(line['N'])) +' $\pm$ ' + str('%.3f' % (np.log10(line['N']+line['Nsig']) - np.log10(line['N']))) + ' /cm$^2$'
+                    logN_det_text= str('%.2f' % np.log10(line['N'])) +r' $\pm$ ' + str('%.3f' % (np.log10(line['N']+line['Nsig']) - np.log10(line['N']))) + r' /cm$^2$'
                 except (ValueError, TypeError):
                     logN_det_text = "N/A"
             else:
@@ -1975,7 +1975,7 @@ class SavePage(QtWidgets.QWidget):
         print(Table_e)
         
         #pdf save
-        pdflabel = QLabel("Enter path and filename: (e.g. pathname\Ions.pdf)",self)
+        pdflabel = QLabel(r"Enter path and filename: (e.g. pathname\Ions.pdf)",self)
         pdflabel.setGeometry(100,100,400,30)
         
         self.pdfline = QLineEdit(self)
@@ -1986,7 +1986,7 @@ class SavePage(QtWidgets.QWidget):
         self.pdfsave.setGeometry(410,125,200,30)
         self.pdfsave.clicked.connect(lambda: onpdf(self,parentvals))
         #table save
-        tablelabel = QLabel("Enter path and filename: (e.g. pathname\Table.dat)",self)
+        tablelabel = QLabel(r"Enter path and filename: (e.g. pathname\Table.dat)",self)
         tablelabel.setGeometry(100,175,400,30)
         
         self.tableline = QLineEdit(self)
@@ -1998,7 +1998,7 @@ class SavePage(QtWidgets.QWidget):
         self.tablesave.clicked.connect(lambda: ontable(self,parentvals,Table_e))
         
         #pickle save
-        picklelabel = QLabel("Enter path and filename: (e.g. pathname\Table.p)",self)
+        picklelabel = QLabel(r"Enter path and filename: (e.g. pathname\Table.p)",self)
         picklelabel.setGeometry(100,250,400,30)
         
         self.pickleline = QLineEdit(self)
@@ -2067,7 +2067,7 @@ class Transitions:
             exit_code = app.exec_()
             main.deleteLater()         # Schedule proper deletion
             app.processEvents()        # Handle pending events
-            sys.exit(exit_code)        # Clean exit
+            # Don't call sys.exit() to maintain IPython compatibility
+            # sys.exit(exit_code) would break interactive sessions
         except Exception as e:
             print(f"Error during shutdown: {e}")
-            sys.exit(1)
