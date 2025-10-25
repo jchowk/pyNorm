@@ -17,7 +17,19 @@ import numpy as np
 import numpy.polynomial.legendre as L
 import numpy as np
 from astropy.io import ascii
-from pkg_resources import resource_filename
+
+# Use modern importlib.resources instead of deprecated pkg_resources
+try:
+    # Python 3.9+
+    from importlib.resources import files
+except ImportError:
+    # Python 3.7-3.8 fallback
+    try:
+        from importlib_resources import files
+    except ImportError:
+        # Final fallback to pkg_resources if importlib_resources not available
+        from pkg_resources import resource_filename
+        files = None
 
 def rb_setline(lambda_rest,method,linelist='atom',target_name=None):
     """
@@ -115,7 +127,13 @@ def read_line_list(label):
     
 
     if label=='atom':
-        filename=resource_filename('pynorm.gui','lines/atom_full.dat')
+        # Use modern importlib.resources API
+        if files is not None:
+            # Python 3.9+ or with importlib_resources package
+            filename = str(files('pynorm.gui').joinpath('lines/atom_full.dat'))
+        else:
+            # Fallback to pkg_resources for older setups
+            filename = resource_filename('pynorm.gui', 'lines/atom_full.dat')
 
 
     data = []
